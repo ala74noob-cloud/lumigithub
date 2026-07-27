@@ -3,246 +3,219 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#12211F">
+<meta name="theme-color" content="#EFE4FA">
 <title>今晚吃什么 · 深圳南山商场骰子</title>
 </head>
 <body>
 <style>
-html,body{margin:0;background:#12211F;}
+html,body{margin:0;background:#F4EFFB;}
 :root{
-  --ink:#12211F;
-  --felt:#1B302C;
-  --felt-hi:#24413B;
-  --bone:#F4EDDF;
-  --bone-2:#E5DAC5;
-  --vermilion:#D8342A;
-  --brass:#C6A257;
-  --jade:#6FA89B;
-  --dim:#93ABA4;
-  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC","SimSun",serif;
-  --sans:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+  --bg:#F4EFFB;
+  --surface:#FFFFFF;
+  --cream:#FBF8FF;
+  --taro:#A98CDC;
+  --taro-2:#C3ADE8;
+  --taro-deep:#6B4CA6;
+  --ink:#4A3B66;
+  --dim:#9A8BB8;
+  --line:#E7DDF6;
+  --pink:#F2B4D8;
+  --pink-deep:#E579B4;
+  --ditto:#B9A2E0;
+  --ditto-edge:#9277C9;
+  --round:"Yuanti SC","YuanTi SC","Hiragino Maru Gothic ProN","PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --shadow:0 12px 30px rgba(120,88,178,.16);
 }
 *{box-sizing:border-box;}
 .wrap{
-  min-height:100vh;background:var(--ink);color:var(--bone);
-  font-family:var(--sans);-webkit-font-smoothing:antialiased;
-  padding:20px 16px 56px;
+  min-height:100vh;
+  background:
+    radial-gradient(120% 60% at 100% 0%, #F7E7F6 0%, transparent 55%),
+    radial-gradient(120% 60% at 0% 5%, #E7DCFA 0%, transparent 50%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--round);-webkit-font-smoothing:antialiased;
+  padding:22px 16px 60px;
 }
 .shell{max-width:520px;margin:0 auto;}
 
-/* ---------- header ---------- */
-.mast{display:flex;align-items:flex-end;gap:12px;margin-bottom:4px;}
-.seal{
-  width:44px;height:44px;flex:none;border-radius:9px;
-  background:var(--vermilion);color:var(--bone);
-  display:grid;place-items:center;font-family:var(--serif);
-  font-size:26px;line-height:1;padding-bottom:2px;
-  box-shadow:0 6px 18px rgba(216,52,42,.32);
-}
+/* header */
+.mast{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+.logo{flex:none;filter:drop-shadow(0 6px 10px rgba(146,119,201,.35));}
 h1{
-  font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.05;
-  margin:0;letter-spacing:.06em;
+  font-family:var(--round);font-weight:800;font-size:26px;line-height:1.14;
+  margin:0;letter-spacing:.01em;color:var(--taro-deep);
 }
 .kicker{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
-  color:var(--brass);text-transform:uppercase;margin:0 0 6px;
+  font-size:12px;letter-spacing:.14em;color:var(--taro);font-weight:700;margin:0 0 8px;
 }
-.sub{color:var(--dim);font-size:12.5px;line-height:1.7;margin:12px 0 0;}
-.rule{height:1px;background:linear-gradient(90deg,var(--brass),transparent);margin:18px 0 0;opacity:.55;}
+.sub{color:var(--dim);font-size:13px;line-height:1.7;margin:10px 0 0;}
+.rule{height:3px;border-radius:3px;background:linear-gradient(90deg,var(--taro),var(--pink) 62%,transparent);margin:14px 0 0;opacity:.75;}
 
-/* ---------- nav ---------- */
-.nav{display:flex;gap:6px;margin:16px 0 20px;}
+/* nav */
+.nav{display:flex;gap:8px;margin:16px 0 20px;}
 .nav button{
-  flex:1;padding:9px 8px;border-radius:8px;cursor:pointer;
-  font-family:var(--sans);font-size:13px;letter-spacing:.05em;
-  border:1px solid rgba(198,162,87,.3);background:transparent;color:var(--dim);
-  transition:.18s;
+  flex:1;padding:11px 8px;border-radius:14px;cursor:pointer;
+  font-family:var(--round);font-size:14px;font-weight:700;letter-spacing:.02em;
+  border:2px solid var(--line);background:var(--surface);color:var(--dim);transition:.18s;
 }
-.nav button[data-on="1"]{background:var(--felt);color:var(--bone);border-color:var(--brass);}
-.nav button:hover{color:var(--bone);}
+.nav button[data-on="1"]{background:var(--taro);color:#fff;border-color:var(--taro);box-shadow:0 8px 18px rgba(169,140,220,.35);}
+.nav button:hover{color:var(--taro-deep);}
+.nav button[data-on="1"]:hover{color:#fff;}
 
-/* ---------- filters ---------- */
-.fbox{border:1px solid rgba(198,162,87,.22);border-radius:12px;padding:14px;background:rgba(27,48,44,.4);}
+/* filters */
+.fbox{border:2px solid var(--line);border-radius:20px;padding:16px;background:var(--surface);box-shadow:var(--shadow);}
 .fhead{
   display:flex;justify-content:space-between;align-items:center;
-  width:100%;background:none;border:0;padding:0;cursor:pointer;color:inherit;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--brass);
+  width:100%;background:none;border:0;padding:0;cursor:pointer;
+  font-family:var(--round);font-size:14px;font-weight:800;letter-spacing:.02em;color:var(--taro-deep);
 }
-.flabel{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--dim);margin:14px 0 8px;}
-.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.flabel{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--dim);margin:16px 0 9px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
 .chip{
-  border:1px solid rgba(244,237,223,.18);background:transparent;color:var(--dim);
-  border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;
-  font-family:var(--sans);transition:.15s;line-height:1.3;
+  border:2px solid var(--line);background:var(--cream);color:var(--ink);
+  border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;
+  font-family:var(--round);font-weight:600;transition:.15s;line-height:1.3;
 }
-.chip:hover{border-color:rgba(244,237,223,.42);color:var(--bone);}
-.chip[data-on="1"]{background:var(--bone);color:var(--ink);border-color:var(--bone);font-weight:600;}
-.chip[data-all="1"][data-on="1"]{background:var(--brass);border-color:var(--brass);color:#1a1408;}
-.fcount{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:14px;}
-.fcount b{color:var(--bone);font-weight:600;}
+.chip:hover{border-color:var(--taro-2);color:var(--taro-deep);}
+.chip[data-on="1"]{background:var(--taro);color:#fff;border-color:var(--taro);}
+.chip[data-all="1"][data-on="1"]{background:var(--pink-deep);border-color:var(--pink-deep);color:#fff;}
+.fcount{font-size:12.5px;color:var(--dim);margin-top:16px;font-weight:600;}
+.fcount b{color:var(--taro-deep);font-weight:800;}
 
-/* ---------- dice tray ---------- */
+/* dice tray */
 .tray{
-  margin:22px 0 0;height:210px;border-radius:16px;position:relative;
+  margin:22px 0 0;height:210px;border-radius:24px;position:relative;
   display:grid;place-items:center;overflow:hidden;
-  background:radial-gradient(ellipse at 50% 26%,var(--felt-hi) 0%,#162925 72%);
-  box-shadow:inset 0 0 0 1px rgba(198,162,87,.34),inset 0 22px 56px rgba(0,0,0,.55);
+  background:radial-gradient(ellipse at 50% 30%,#F1E9FC 0%,#E4D6F6 78%);
+  border:2px solid var(--line);box-shadow:inset 0 6px 20px rgba(146,119,201,.18);
 }
-.stage{perspective:760px;width:104px;height:104px;}
+.stage{perspective:760px;width:104px;height:104px;z-index:2;}
 .cube{
   width:104px;height:104px;position:relative;transform-style:preserve-3d;
   transition:transform 1250ms cubic-bezier(.16,.86,.28,1);
 }
 @media (prefers-reduced-motion:reduce){.cube{transition-duration:160ms;}}
 .face{
-  position:absolute;inset:0;border-radius:16px;
-  background:linear-gradient(150deg,#FBF6EC 0%,var(--bone) 42%,var(--bone-2) 100%);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.09), inset 0 -8px 16px rgba(0,0,0,.09);
-  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);
-  padding:13px;gap:3px;
+  position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(150deg,#FFFFFF 0%,#FBF6FF 45%,#F0E6FB 100%);
+  box-shadow:inset 0 0 0 2px rgba(146,119,201,.14), inset 0 -8px 16px rgba(146,119,201,.12);
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:14px;gap:3px;
 }
-.pip{width:14px;height:14px;border-radius:50%;align-self:center;justify-self:center;
-  background:#1d1d1d;box-shadow:inset 0 1.5px 2px rgba(255,255,255,.28);}
-.pip.red{background:var(--vermilion);}
+.pip{width:15px;height:15px;border-radius:50%;align-self:center;justify-self:center;
+  background:var(--taro);box-shadow:inset 0 2px 3px rgba(255,255,255,.4);}
+.pip.red{background:var(--pink-deep);}
 .pip.big{width:26px;height:26px;}
 .shadow{
-  position:absolute;bottom:34px;width:96px;height:14px;border-radius:50%;
-  background:rgba(0,0,0,.45);filter:blur(9px);transition:.5s;
+  position:absolute;bottom:34px;width:92px;height:14px;border-radius:50%;
+  background:rgba(120,88,178,.28);filter:blur(9px);transition:.5s;z-index:1;
 }
-.trayTag{
-  position:absolute;top:12px;left:14px;font-family:var(--mono);
-  font-size:9.5px;letter-spacing:.2em;color:rgba(198,162,87,.6);
-}
+.trayTag{position:absolute;top:14px;left:16px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--taro);z-index:3;}
+.trayDitto{position:absolute;bottom:10px;right:12px;z-index:1;opacity:.92;filter:drop-shadow(0 5px 8px rgba(146,119,201,.3));}
 
-/* ---------- big button ---------- */
+/* big button */
 .roll{
-  width:100%;margin-top:16px;padding:17px;border-radius:12px;border:0;cursor:pointer;
-  background:var(--vermilion);color:#fff;font-family:var(--serif);
-  font-size:19px;letter-spacing:.34em;text-indent:.34em;font-weight:700;
-  box-shadow:0 10px 26px rgba(216,52,42,.3);transition:.16s;
+  width:100%;margin-top:16px;padding:18px;border-radius:999px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--taro) 0%,var(--pink-deep) 118%);color:#fff;
+  font-family:var(--round);font-size:19px;letter-spacing:.18em;font-weight:800;
+  box-shadow:0 12px 26px rgba(169,140,220,.42);transition:.16s;
 }
-.roll:hover{filter:brightness(1.08);}
-.roll:active{transform:translateY(2px);box-shadow:0 4px 12px rgba(216,52,42,.3);}
-.roll:disabled{opacity:.5;cursor:wait;}
+.roll:hover{filter:brightness(1.05);transform:translateY(-1px);}
+.roll:active{transform:translateY(2px);box-shadow:0 5px 12px rgba(169,140,220,.4);}
+.roll:disabled{opacity:.55;cursor:wait;}
 
-/* ---------- result ---------- */
+/* result card */
 .card{
-  margin-top:20px;border-radius:14px;overflow:hidden;
-  border:1px solid rgba(198,162,87,.3);background:#152724;
+  margin-top:20px;border-radius:24px;overflow:hidden;
+  border:2px solid var(--line);background:var(--surface);box-shadow:var(--shadow);
   animation:rise .46s cubic-bezier(.2,.9,.3,1) both;
 }
 @keyframes rise{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
 @media (prefers-reduced-motion:reduce){.card{animation:none;}}
 
-/* 店面招牌 —— 印章徽标 + 遮阳棚，代替店面照片 */
+/* hero (招牌) */
 .hero{
-  position:relative;overflow:hidden;
-  padding:30px 22px 24px;
-  display:flex;flex-direction:column;align-items:center;gap:13px;
-  text-align:center;border-bottom:1px solid rgba(198,162,87,.28);
+  position:relative;overflow:hidden;padding:28px 22px 24px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
 }
 .hero::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:9px;
-  background:repeating-linear-gradient(90deg,rgba(255,255,255,.30) 0 15px,transparent 15px 30px);
-  opacity:.55;pointer-events:none;
+  content:"";position:absolute;top:0;left:0;right:0;height:11px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.78) 0 16px,transparent 16px 32px);
+  opacity:.85;pointer-events:none;
 }
 .hero::after{
   content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(130% 88% at 50% -14%,rgba(255,255,255,.16),transparent 62%);
+  background:radial-gradient(130% 90% at 50% -12%,rgba(255,255,255,.55),transparent 60%);
 }
 .heroTop{
-  position:relative;z-index:1;width:100%;
-  display:flex;justify-content:space-between;align-items:center;
-  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
-  color:rgba(255,255,255,.82);
+  position:relative;z-index:1;width:100%;display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--taro-deep);
 }
-.heroKind{display:inline-flex;align-items:center;gap:5px;letter-spacing:.1em;}
+.heroKind{display:inline-flex;align-items:center;gap:5px;}
 .heroSeal{
-  position:relative;z-index:1;
-  width:66px;height:66px;border-radius:17px;flex:none;
-  display:grid;place-items:center;
-  font-family:var(--serif);font-weight:700;font-size:34px;color:#fff;line-height:1;
-  background:rgba(255,255,255,.13);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 10px 22px rgba(0,0,0,.28);
-  text-shadow:0 2px 10px rgba(0,0,0,.3);
+  position:relative;z-index:1;width:66px;height:66px;border-radius:20px;flex:none;
+  display:grid;place-items:center;font-family:var(--round);font-weight:800;font-size:32px;
+  color:var(--taro-deep);line-height:1;background:rgba(255,255,255,.94);
+  box-shadow:0 8px 18px rgba(120,88,178,.22);
 }
 .heroName{
-  position:relative;z-index:1;margin:0;
-  font-family:var(--serif);font-weight:700;font-size:26px;line-height:1.28;
-  letter-spacing:.02em;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.38);
-  max-width:100%;word-break:break-word;
+  position:relative;z-index:1;margin:0;font-family:var(--round);font-weight:800;
+  font-size:25px;line-height:1.28;letter-spacing:.01em;color:#3C2F58;
+  text-shadow:0 1px 6px rgba(255,255,255,.5);max-width:100%;word-break:break-word;
 }
-.heroMall{
-  position:relative;z-index:1;
-  font-family:var(--mono);font-size:11px;letter-spacing:.12em;
-  color:rgba(255,255,255,.86);
-}
-.body{padding:18px 16px 16px;}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;}
+.heroMall{position:relative;z-index:1;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--taro-deep);}
+.body{padding:18px 18px 18px;}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin:0;}
 .tag{
-  font-size:11.5px;padding:4px 10px;border-radius:999px;
-  border:1px solid rgba(111,168,155,.45);color:var(--jade);font-family:var(--sans);
+  font-size:12px;padding:5px 12px;border-radius:999px;font-weight:600;
+  border:2px solid var(--line);color:var(--taro-deep);font-family:var(--round);background:var(--cream);
 }
-.tag.mall{border-color:rgba(198,162,87,.45);color:var(--brass);}
-.blurb{font-size:14px;line-height:1.8;color:var(--bone);margin:14px 0 0;opacity:.92;}
+.tag.mall{border-color:rgba(242,180,216,.6);color:var(--pink-deep);background:#FDF3F9;}
+.blurb{font-size:14.5px;line-height:1.85;color:var(--ink);margin:14px 0 0;}
 .addr{
-  font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--dim);
-  margin:12px 0 0;padding-left:15px;position:relative;word-break:break-all;
+  font-size:12.5px;line-height:1.7;color:var(--dim);margin:12px 0 0;
+  padding-left:19px;position:relative;word-break:break-all;font-weight:500;
 }
-.addr::before{content:"\25C9";position:absolute;left:0;top:1px;color:var(--brass);font-size:9px;}
-
-.scoreRow{display:flex;align-items:center;gap:11px;margin:16px 0 0;
-  padding-top:14px;border-top:1px solid rgba(198,162,87,.2);}
-.scoreNum{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--brass);line-height:1;font-variant-numeric:tabular-nums;}
-.bars{display:flex;gap:3px;}
-.bar{width:15px;height:5px;border-radius:2px;background:rgba(198,162,87,.2);}
-.bar[data-on="1"]{background:var(--brass);}
-.scoreLbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--dim);margin-left:auto;text-align:right;line-height:1.5;}
-
-.acts{display:flex;gap:8px;margin:16px 0 0;}
+.addr::before{content:"\1F4CD";position:absolute;left:0;top:0;font-size:12px;}
+.scoreRow{display:flex;align-items:center;gap:11px;margin:16px 0 0;padding-top:15px;border-top:2px dashed var(--line);}
+.scoreNum{font-size:25px;font-weight:800;color:var(--pink-deep);line-height:1;font-variant-numeric:tabular-nums;}
+.bars{display:flex;gap:4px;}
+.bar{width:16px;height:7px;border-radius:999px;background:var(--line);}
+.bar[data-on="1"]{background:var(--taro);}
+.scoreLbl{font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--dim);margin-left:auto;text-align:right;line-height:1.5;}
+.acts{display:flex;gap:9px;margin:16px 0 0;}
 .act{
-  flex:1;padding:12px 6px;border-radius:9px;cursor:pointer;font-size:13px;
-  font-family:var(--sans);border:1px solid rgba(244,237,223,.25);
-  background:transparent;color:var(--bone);transition:.16s;text-align:center;
-  text-decoration:none;display:block;
+  flex:1;padding:13px 6px;border-radius:14px;cursor:pointer;font-size:13.5px;font-weight:700;
+  font-family:var(--round);border:2px solid var(--line);background:var(--cream);color:var(--taro-deep);
+  transition:.16s;text-align:center;text-decoration:none;display:block;
 }
-.act:hover{background:rgba(244,237,223,.09);}
-.act[data-fav="1"]{background:var(--vermilion);border-color:var(--vermilion);color:#fff;font-weight:600;}
-.links{display:flex;gap:8px;margin:8px 0 0;}
-.links .act{font-size:12px;padding:10px 6px;color:var(--dim);}
-.links .act:hover{color:var(--bone);}
+.act:hover{background:#F0E9FB;border-color:var(--taro-2);}
+.act[data-fav="1"]{background:var(--pink-deep);border-color:var(--pink-deep);color:#fff;}
+.links{display:flex;gap:8px;margin:9px 0 0;}
+.links .act{font-size:12.5px;padding:11px 6px;color:var(--taro);}
+.links .act:hover{color:var(--taro-deep);}
 
-/* ---------- empty / favorites ---------- */
+/* empty / favorites */
 .empty{
-  border:1px dashed rgba(198,162,87,.32);border-radius:12px;padding:28px 20px;
-  text-align:center;color:var(--dim);font-size:13.5px;line-height:1.9;margin-top:20px;
+  border:2px dashed var(--taro-2);border-radius:20px;padding:30px 20px;text-align:center;
+  color:var(--dim);font-size:14px;line-height:1.9;margin-top:20px;font-weight:600;background:var(--surface);
 }
-.favItem{
-  border:1px solid rgba(198,162,87,.22);border-radius:11px;padding:14px;
-  margin-bottom:9px;background:rgba(27,48,44,.34);
-}
+.favItem{border:2px solid var(--line);border-radius:18px;padding:16px;margin-bottom:11px;background:var(--surface);box-shadow:var(--shadow);}
 .favTop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.favName{font-family:var(--serif);font-size:17.5px;font-weight:700;margin:0;line-height:1.3;}
-.favMeta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin:7px 0 0;letter-spacing:.05em;}
-.favAddr{font-family:var(--mono);font-size:10.5px;color:var(--dim);opacity:.78;margin:5px 0 0;line-height:1.6;}
-.del{
-  background:none;border:0;color:var(--dim);cursor:pointer;font-size:11px;
-  padding:3px 6px;border-radius:6px;flex:none;font-family:var(--sans);
-}
-.del:hover{color:var(--vermilion);background:rgba(216,52,42,.1);}
+.favName{font-family:var(--round);font-size:18px;font-weight:800;margin:0;line-height:1.3;color:var(--taro-deep);}
+.favMeta{font-size:12px;color:var(--dim);margin:7px 0 0;letter-spacing:.02em;font-weight:600;}
+.favAddr{font-size:12px;color:var(--dim);opacity:.85;margin:6px 0 0;line-height:1.6;}
+.del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:9px;flex:none;font-family:var(--round);}
+.del:hover{color:var(--pink-deep);background:#FDF0F7;}
 
-/* ---------- footnote ---------- */
-.note{margin-top:26px;border-top:1px solid rgba(198,162,87,.2);padding-top:14px;}
-.note summary{
-  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--brass);
-  cursor:pointer;list-style:none;
-}
+/* footnote */
+.note{margin-top:28px;border-top:2px dashed var(--line);padding-top:16px;}
+.note summary{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--taro);cursor:pointer;list-style:none;}
 .note summary::-webkit-details-marker{display:none;}
-.note p{font-size:11.5px;line-height:1.9;color:var(--dim);margin:11px 0 0;}
-button:focus-visible,a:focus-visible,summary:focus-visible{
-  outline:2px solid var(--brass);outline-offset:2px;
-}
+.note p{font-size:12px;line-height:1.9;color:var(--dim);margin:11px 0 0;font-weight:500;}
+.note b{color:var(--taro-deep);}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--taro);outline-offset:2px;}
 </style>
 
 <div class="wrap"><div class="shell" id="shell"></div></div>
@@ -269,17 +242,23 @@ button:focus-visible,a:focus-visible,summary:focus-visible{
     {k:"壹方城",metro:"1/5号线 宝安中心站"}
   ];
   var CUISINES=[
-    {k:"中餐",hue:"#B33A2E",emoji:"🥢"},
-    {k:"日料",hue:"#2E6E8E",emoji:"🍣"},
-    {k:"火锅",hue:"#C0472A",emoji:"🍲"},
-    {k:"西餐",hue:"#5C6E4A",emoji:"🥩"},
-    {k:"韩餐",hue:"#A23C57",emoji:"🍗"},
-    {k:"东南亚菜",hue:"#B07A1E",emoji:"🍤"}
+    {k:"中餐",hue:"#E68AA0",emoji:"🥢"},
+    {k:"日料",hue:"#8DB6DA",emoji:"🍣"},
+    {k:"火锅",hue:"#F1A488",emoji:"🍲"},
+    {k:"西餐",hue:"#AECB9C",emoji:"🥩"},
+    {k:"韩餐",hue:"#D79ACB",emoji:"🍗"},
+    {k:"东南亚菜",hue:"#EAC178",emoji:"🍤"}
   ];
   var HUE={},EMOJI={},METRO={};
   CUISINES.forEach(function(c){HUE[c.k]=c.hue;EMOJI[c.k]=c.emoji;});
   MALLS.forEach(function(m){METRO[m.k]=m.metro;});
   function monogram(name){var m=name.match(/[一-龥A-Za-z0-9]/);return m?m[0]:"食";}
+
+  var DITTO='<rect x="6" y="0" width="4" height="1" fill="#5E4593"/><rect x="4" y="1" width="1" height="1" fill="#5E4593"/><rect x="5" y="1" width="6" height="1" fill="#9878C8"/><rect x="11" y="1" width="1" height="1" fill="#5E4593"/><rect x="3" y="2" width="1" height="1" fill="#5E4593"/><rect x="4" y="2" width="8" height="1" fill="#9878C8"/><rect x="12" y="2" width="1" height="1" fill="#5E4593"/><rect x="2" y="3" width="1" height="1" fill="#5E4593"/><rect x="3" y="3" width="1" height="1" fill="#9878C8"/><rect x="4" y="3" width="2" height="1" fill="#C6B0EA"/><rect x="6" y="3" width="7" height="1" fill="#9878C8"/><rect x="13" y="3" width="1" height="1" fill="#5E4593"/><rect x="2" y="4" width="1" height="1" fill="#5E4593"/><rect x="3" y="4" width="1" height="1" fill="#9878C8"/><rect x="4" y="4" width="2" height="1" fill="#C6B0EA"/><rect x="6" y="4" width="7" height="1" fill="#9878C8"/><rect x="13" y="4" width="1" height="1" fill="#5E4593"/><rect x="1" y="5" width="1" height="1" fill="#5E4593"/><rect x="2" y="5" width="12" height="1" fill="#9878C8"/><rect x="14" y="5" width="1" height="1" fill="#5E4593"/><rect x="1" y="6" width="1" height="1" fill="#5E4593"/><rect x="2" y="6" width="2" height="1" fill="#9878C8"/><rect x="4" y="6" width="2" height="1" fill="#33264F"/><rect x="6" y="6" width="4" height="1" fill="#9878C8"/><rect x="10" y="6" width="2" height="1" fill="#33264F"/><rect x="12" y="6" width="2" height="1" fill="#9878C8"/><rect x="14" y="6" width="1" height="1" fill="#5E4593"/><rect x="0" y="7" width="1" height="1" fill="#5E4593"/><rect x="1" y="7" width="14" height="1" fill="#9878C8"/><rect x="15" y="7" width="1" height="1" fill="#5E4593"/><rect x="0" y="8" width="1" height="1" fill="#5E4593"/><rect x="1" y="8" width="14" height="1" fill="#9878C8"/><rect x="15" y="8" width="1" height="1" fill="#5E4593"/><rect x="0" y="9" width="1" height="1" fill="#5E4593"/><rect x="1" y="9" width="4" height="1" fill="#9878C8"/><rect x="5" y="9" width="1" height="1" fill="#33264F"/><rect x="6" y="9" width="4" height="1" fill="#9878C8"/><rect x="10" y="9" width="1" height="1" fill="#33264F"/><rect x="11" y="9" width="4" height="1" fill="#9878C8"/><rect x="15" y="9" width="1" height="1" fill="#5E4593"/><rect x="1" y="10" width="1" height="1" fill="#5E4593"/><rect x="2" y="10" width="4" height="1" fill="#9878C8"/><rect x="6" y="10" width="4" height="1" fill="#33264F"/><rect x="10" y="10" width="4" height="1" fill="#9878C8"/><rect x="14" y="10" width="1" height="1" fill="#5E4593"/><rect x="1" y="11" width="1" height="1" fill="#5E4593"/><rect x="2" y="11" width="12" height="1" fill="#7B5CB0"/><rect x="14" y="11" width="1" height="1" fill="#5E4593"/><rect x="2" y="12" width="1" height="1" fill="#5E4593"/><rect x="3" y="12" width="10" height="1" fill="#7B5CB0"/><rect x="13" y="12" width="1" height="1" fill="#5E4593"/><rect x="3" y="13" width="1" height="1" fill="#5E4593"/><rect x="4" y="13" width="8" height="1" fill="#7B5CB0"/><rect x="12" y="13" width="1" height="1" fill="#5E4593"/><rect x="5" y="14" width="6" height="1" fill="#5E4593"/>';
+  function ditto(size,cls){
+    var h=Math.round(size*15/16);
+    return '<svg class="'+(cls||"")+'" width="'+size+'" height="'+h+'" viewBox="0 0 16 15" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+DITTO+'</svg>';
+  }
 
   var RAW=[
     // 深圳湾万象城
@@ -424,8 +403,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible{
 
   function skeleton(){
     shell.innerHTML=
-      '<p class="kicker">Shenzhen · Nanshan · '+TOTAL+' spots</p>'+
-      '<div class="mast"><div class="seal">骰</div><h1>今晚吃什么</h1></div>'+
+      '<p class="kicker">深圳南山 · '+TOTAL+' 家真实门店</p>'+
+      '<div class="mast">'+ditto(52,"logo")+'<h1>y7我们今天吃什么？</h1></div>'+
       '<div class="rule" style="margin-top:14px"></div>'+
       '<div class="nav">'+
         '<button data-act="tab" data-val="roll" data-on="1">摇骰子</button>'+
@@ -433,20 +412,16 @@ button:focus-visible,a:focus-visible,summary:focus-visible{
       '</div>'+
       '<div id="rollView">'+
         '<div class="fbox" id="fbox"></div>'+
-        '<div class="tray"><span class="trayTag">摇骰盅</span>'+
+        '<div class="tray"><span class="trayTag">百变怪帮你选 ✨</span>'+
           '<div class="stage"><div class="cube" id="cube"></div><div class="shadow" id="shadow"></div></div>'+
+        ditto(58,"trayDitto")+
         '</div>'+
-        '<button class="roll" id="rollBtn">摇 骰 子</button>'+
+        '<button class="roll" id="rollBtn">摇一摇 🎲</button>'+
         '<div id="poolEmpty"></div>'+
         '<div id="result"></div>'+
       '</div>'+
       '<div id="favView" style="display:none"></div>'+
-      '<details class="note"><summary>数据说明 ＋</summary>'+
-        '<p>门店来自近一年的中文探店内容与点评数据整理：2025 黑珍珠餐厅指南南山榜单、携程／Trip.com 探店笔记、大众点评与 OpenRice 门店页、U Travel 与 U Food 的商场美食专题，以及各商场公开的品牌楼层表。</p>'+
-        '<p>「口碑指数」是把这些来源里的评分与评价倾向综合成的一个参考值，不是小红书官方评分 —— 小红书本身没有店铺评分体系，所以任何号称「小红书评分」的数字都是二次加工的。想看真实评价和实拍图，点卡片上的「大众点评 / 小红书」按钮搜店名。</p>'+
-        '<p>关于外链：<b>手机上</b>点这些按钮会直接唤起大众点评 / 小红书 / 高德 App，体验最顺。<b>电脑浏览器</b>里，点评和小红书通常要求登录或扫码，这是平台限制不是链接坏了 —— 建议用手机打开本页，或直接在对应 App 里搜店名。</p>'+
-        '<p>壹方城位于宝安中心区，不在南山，按你的清单一并收进来了。门店会开会关，出发前建议先在地图或点评上确认一下营业状态。</p>'+
-      '</details>';
+      '';
 
     var cube=document.getElementById("cube");
     buildFaces(cube);
@@ -479,7 +454,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{
     var n=pool().length;
     var btn=document.getElementById("rollBtn");
     btn.disabled=rolling||n===0;
-    btn.textContent=rolling?"摇 …":(pick?"再摇一次":"摇 骰 子");
+    btn.textContent=rolling?"变身中…":(pick?"再摇一次":"摇一摇 🎲");
     document.getElementById("poolEmpty").innerHTML=
       n===0?'<div class="empty">这个组合暂时没有店。<br>八个商场里，东南亚菜和韩餐本来就少，换个商场或者把口味放宽试试。</div>':"";
   }
@@ -501,7 +476,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{
     var p=pick,fav=isFav(p);
     el.innerHTML=
       '<div class="card">'+
-        '<div class="hero" style="background:linear-gradient(160deg,'+HUE[p.cuisine]+' 0%,#10201d 120%)">'+
+        '<div class="hero" style="background:linear-gradient(160deg,'+HUE[p.cuisine]+' 0%,#F5EEFC 125%)">'+
           '<div class="heroTop"><span>NO.'+pad(p.id)+' / '+TOTAL+'</span>'+
             '<span class="heroKind">'+EMOJI[p.cuisine]+' '+esc(p.cuisine)+'</span></div>'+
           '<div class="heroSeal">'+esc(monogram(p.name))+'</div>'+
