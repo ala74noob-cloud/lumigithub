@@ -448,7 +448,7 @@ function parseNum(s){
 }
 function fmt(v){if(v>=1e8)return(+(v/1e8).toFixed(2))+'亿';if(v>=1e4)return(+(v/1e4).toFixed(1))+'万';return Math.round(v).toLocaleString();}
 function platformTotal(){
-  const vs=['netease','qq','kugou'].map(k=>parseNum(state.platforms[k].followers)).filter(v=>!isNaN(v));
+  const vs=[...['netease','qq','kugou'].map(k=>state.platforms[k].followers),state.spotify.followers].map(parseNum).filter(v=>!isNaN(v));
   return vs.length?fmt(vs.reduce((a,b)=>a+b,0))+'+':'';
 }
 
@@ -726,7 +726,7 @@ function dspSlide(){
   const s=slide();const g=h('div',{class:'split',style:'grid-template-columns:420px 1fr'});
   const tot=platformTotal();
   const tx=h('div',{class:'tx'},head(K_MUS,'2.4','DSP 总览','主页粉丝'),
-    h('div',{class:'tile',style:'margin-top:6px;padding:22px 22px 18px'},h('div',{class:'n',id:'ptotal',style:'font-size:62px'},tot||'—'),h('div',{class:'l'},'网易云 + QQ 音乐 + 酷狗 粉丝总量')),
+    h('div',{class:'tile',style:'margin-top:6px;padding:22px 22px 18px'},h('div',{class:'n',id:'ptotal',style:'font-size:62px'},tot||'—'),h('div',{class:'l'},'网易云 + QQ 音乐 + 酷狗 + Spotify 粉丝总量')),
     h('div',{class:'plist'},
       pk.map(([k,n])=>(EDIT||val(P[k].followers))?h('div',{class:'p'},h('span',null,n),h('b',null,F(P[k],'followers','粉丝数'))):null),
       (EDIT||val(sp.followers))?h('div',{class:'p'},h('span',null,'Spotify 粉丝'),h('b',null,F(sp,'followers','粉丝'))):null,
