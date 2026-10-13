@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>R3HAB × 徐明浩 Pitch</title>
 <style id="main-style">
-/* Layout: A4 data brief — artist first, GREENROOM palette (cream paper, ink, pink kicker, lime highlight) */
+/* Layout: 16:9 artist pitch deck — GREENROOM palette (cream slides, ink, pink kicker, lime numbers on dark tiles) */
 :root{
   color-scheme:light;
-  --app:#e7e5dc; --bar:#1a1b1e; --bar-fg:#ececea; --bar-dim:#9a9a96;
+  --app:#e4e2d9; --bar:#1a1b1e; --bar-fg:#ececea; --bar-dim:#9a9a96;
   --paper:#f5f4ef; --card:#ffffff; --ink:#1b1b1d; --gray:#6b6a66; --gray2:#9b9a95; --line:#dcdad1;
   --pink:#e2297c; --lime:#d6ef4f; --limebg:#e0f264; --dark:#1a1b1e; --dark2:#26272b;
   --font:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
@@ -17,7 +17,7 @@
 html,body{margin:0;background:var(--app);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 button{font-family:inherit}
 
-/* ---------- toolbar ---------- */
+/* toolbar */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--bar);color:var(--bar-fg);display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;font-size:13px}
 .bar .brand{font-weight:800;letter-spacing:.12em;color:var(--lime);margin-right:8px}
 .bar button{font-size:13px;border:1px solid #3a3b41;background:#24252a;color:var(--bar-fg);border-radius:6px;padding:7px 12px;cursor:pointer}
@@ -29,167 +29,164 @@ button{font-family:inherit}
 .bar .status{color:var(--bar-dim);margin-left:auto}
 button[data-arm]{border-color:var(--pink)!important;color:#ffb3d1!important}
 
-.stagewrap{padding:24px 16px 80px;display:flex;flex-direction:column;align-items:center;gap:24px}
-.hintline{width:min(210mm,100%);font-size:13px;color:var(--gray);line-height:1.6}
+.stagewrap{padding:20px 16px 80px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.hintline{width:min(1280px,100%);font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:8px}
 .hintline b{color:var(--ink)}
+#deck{width:min(1280px,100%);display:flex;flex-direction:column;gap:6px}
+.frame{position:relative}
+.fbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0 8px;font-size:12px;color:var(--gray)}
+.fbar .pg{font-weight:800;letter-spacing:.14em;margin-right:auto}
+.fbar button{font-size:12px;border:1px dashed var(--pink);background:transparent;color:var(--pink);border-radius:6px;padding:5px 10px;cursor:pointer;font-weight:700}
+.fbar button:hover{background:var(--pink);color:#fff}
+.holder{position:relative;overflow:hidden;border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.14)}
+body.view .fbar button{display:none}
 
-/* ---------- paper ---------- */
-.doc{width:210mm;background:var(--paper);box-shadow:0 8px 30px rgba(0,0,0,.12)}
-.doc .sec{padding:56px 56px 40px;border-top:6px solid var(--app)}
-.doc .sec:first-child{border-top:none}
-.sheet{width:210mm;height:297mm;background:var(--paper);position:relative;overflow:hidden;padding:56px 56px 0;box-shadow:0 8px 30px rgba(0,0,0,.12)}
-.sheet .flow{display:flex;flex-direction:column;gap:18px}
-.sheet .pfoot{position:absolute;left:56px;right:56px;bottom:26px;display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.18em;color:var(--gray2);font-weight:700;text-transform:uppercase}
-.sheet .pfoot img{width:16px;height:auto}
-.sheet .pfoot span:last-child{margin-left:auto}
-.sec{display:flex;flex-direction:column;gap:18px}
-#pages{display:flex;flex-direction:column;gap:24px;align-items:center}
-.measure{position:absolute;left:-99999px;top:0;width:210mm;padding:0 56px;visibility:hidden}
-.measure .sec{gap:18px}
+/* slide */
+.slide{width:1280px;height:720px;position:relative;overflow:hidden;background:var(--paper);color:var(--ink);transform-origin:0 0;padding:52px 64px 0}
+.slide.dark{background:var(--dark);color:#f2f2ee}
+.sfoot{position:absolute;left:64px;right:64px;bottom:20px;display:flex;align-items:center;gap:10px;font-size:10.5px;letter-spacing:.2em;color:var(--gray2);font-weight:800;text-transform:uppercase}
+.sfoot img{width:15px;height:auto}
+.sfoot span:last-child{margin-left:auto}
+.dark .sfoot{color:#77776f}
 
-/* ---------- type ---------- */
-.kick{font-size:11px;font-weight:800;letter-spacing:.3em;color:var(--pink);text-transform:uppercase}
-.h2{font-size:30px;line-height:1.15;font-weight:800;margin:8px 0 0;letter-spacing:-.01em;text-wrap:balance}
-.desc{font-size:13.5px;line-height:1.65;color:var(--gray);margin:8px 0 0;max-width:600px}
-.rule{height:2px;background:var(--ink);margin-top:18px}
-.h3{font-size:19px;font-weight:800;margin:6px 0 0;display:flex;align-items:baseline;gap:10px}
-.h3 .no{color:var(--pink);font-size:15px}
-.sub{font-size:12.5px;color:var(--gray);margin-top:4px;line-height:1.6}
-.lbl{font-size:12.5px;font-weight:800;margin:4px 0 0}
-.hl{background:var(--limebg);padding:0 4px}
-.empty-note{font-size:12.5px;color:var(--gray2);font-style:italic}
+.kick{font-size:12.5px;font-weight:800;letter-spacing:.3em;color:var(--pink);text-transform:uppercase}
+.dark .kick{color:var(--lime)}
+.h2{font-size:34px;line-height:1.15;font-weight:800;margin:8px 0 0;letter-spacing:-.01em}
+.h2 .no{color:var(--pink);margin-right:12px}
+.desc{font-size:15.5px;line-height:1.6;color:var(--gray);margin:8px 0 0}
+.dark .desc{color:#a9a9a5}
+.hl{background:var(--limebg);color:var(--ink);padding:0 5px}
+.head{height:118px}
+.empty-note{font-size:14px;color:var(--gray2);font-style:italic}
 
-/* big lead number, odd-mob style */
-.lead{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.lead .big{font-size:50px;font-weight:800;letter-spacing:-.02em;line-height:1}
-.lead .big .u{font-size:16px;font-weight:700;margin-left:6px;letter-spacing:0}
-.lead .what{font-size:13.5px;color:var(--gray)}
+.tile{background:var(--dark);color:#fff;border-radius:9px;padding:16px 18px 14px;min-width:0}
+.tile .n{font-size:40px;font-weight:800;color:var(--lime);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .l{font-size:11px;font-weight:800;letter-spacing:.16em;color:#b4b4b1;margin-top:8px;text-transform:uppercase}
+.dark .tile{background:var(--dark2)}
+.tiles{display:grid;gap:12px}
 
-/* kpi tiles (GREENROOM dark tiles) */
-.tiles{display:grid;gap:10px}
-.t2{grid-template-columns:repeat(2,1fr)}.t3{grid-template-columns:repeat(3,1fr)}.t4{grid-template-columns:repeat(4,1fr)}
-.tile{background:var(--dark);color:#fff;border-radius:8px;padding:14px 14px 12px;min-width:0}
-.tile .n{font-size:26px;font-weight:800;color:var(--lime);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tile .l{font-size:10px;font-weight:800;letter-spacing:.14em;color:#b4b4b1;margin-top:8px;text-transform:uppercase}
-.tile.light{background:var(--card);color:var(--ink);border:1px solid var(--line)}
-.tile.light .n{color:var(--ink)}
-.tile.light .l{color:var(--gray)}
-
-/* screenshots: always natural aspect ratio */
-.shot{margin:0;display:block;position:relative;line-height:0}
-.shot img{display:block;max-width:100%;width:auto;height:auto;border-radius:6px;box-shadow:0 1px 0 var(--line),0 0 0 1px rgba(0,0,0,.04)}
-.shot.full img{width:100%;max-height:none!important}
-.mh-tag img{max-height:360px}
-.mh-prof img{max-height:440px}
-.mh-lead img{max-height:240px}
-.mh-row img{max-height:150px}
-.mh-plat img{max-height:330px}
-.mh-sp img{max-height:380px}
-.mh-collab img{max-height:300px}
-.mh-tour img{max-height:300px}
-.mh-extra img{max-height:420px}
-
-/* posts grid */
-.posts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
-.post .shot img{width:100%;max-height:none}
-.post .pt{font-size:13px;font-weight:800;margin-top:9px;line-height:1.35}
-.post .pd{font-size:11.5px;color:var(--gray);margin-top:4px;line-height:1.45}
-.kv{margin-top:10px;border-top:1px solid var(--line);font-size:11.5px}
-.kv .r{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+/* images keep their ratio: width/height are set together from the image's own aspect ratio */
+.pic{display:block;border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.08);background:#fff}
+.gal{display:flex;flex-direction:column;justify-content:center;gap:18px;height:100%}
+.grow{display:flex;justify-content:center;align-items:flex-start;gap:16px}
+.cell{display:flex;flex-direction:column;align-items:center;min-width:0}
+.cell .pic{flex:none}
+.cap{width:100%;font-size:12.5px;line-height:1.4;margin-top:8px;overflow:hidden}
+.cap .ct{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap .ca{color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.cap .cn{font-weight:800;font-size:15px}
+.cap .cn small{font-size:11px;color:var(--gray);margin-left:3px}
+.kv{display:grid;grid-template-columns:1fr;column-gap:12px;margin-top:6px;border-top:1px solid var(--line);padding-top:4px}
+.kv .r{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;padding:2px 0}
 .kv .r span:first-child{color:var(--gray)}
-.kv .r span:last-child{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.kv .r span:last-child{font-weight:800;font-variant-numeric:tabular-nums}
+.area{position:absolute;left:64px;right:64px;top:170px;bottom:56px}
 
-/* two-column item (image + text) */
-.pair{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
-.pair.rev{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.pair .tt{font-size:15px;font-weight:800}
-.pair .ta{font-size:12.5px;color:var(--gray);margin-top:3px}
-.pair .tn{font-size:22px;font-weight:800;margin-top:8px}
-.pair .tn small{font-size:12px;font-weight:700;color:var(--gray);margin-left:4px}
-.profile-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:start}
-.profile-item .pf{font-size:17px;font-weight:800;margin-bottom:12px}
-.plat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
-.plat .pn{font-size:12px;font-weight:800;letter-spacing:.06em;margin-bottom:4px}
-.plat .pv{font-size:22px;font-weight:800;margin-bottom:10px}
-.plat .pv small{font-size:11px;color:var(--gray);margin-left:4px;font-weight:700}
-.total{background:var(--dark);color:#fff;border-radius:10px;padding:20px 22px;display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 16px}
-.total .big{font-size:52px;font-weight:800;color:var(--lime);letter-spacing:-.02em;line-height:1}
-.total .what{font-size:12px;letter-spacing:.16em;font-weight:800;color:#b4b4b1;text-transform:uppercase}
-.table{border-top:2px solid var(--ink)}
-.table .r{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:baseline}
+/* split slides: text column + picture area */
+.split{position:absolute;inset:52px 64px 56px 64px;display:grid;gap:44px}
+.split .tx{display:flex;flex-direction:column;min-width:0}
+.split .pa{position:relative;min-width:0}
+.split .h2{font-size:30px}
+.big{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.bigl{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--gray);margin-top:8px;text-transform:uppercase}
+.table{border-top:2px solid var(--ink);margin-top:18px}
+.dark .table{border-color:#f2f2ee}
+.table .r{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;align-items:baseline}
+.dark .table .r{border-color:#3a3b40}
 .table .r .i{color:var(--pink);font-weight:800}
+.dark .table .r .i{color:var(--lime)}
 .table .r .v{font-weight:800;font-variant-numeric:tabular-nums}
-.table.tour .r{grid-template-columns:70px 110px minmax(0,1fr)}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
-.badge{background:var(--limebg);border-radius:8px;padding:14px 18px}
-.badge b{display:block;font-size:17px}
-.badge span{font-size:11.5px;color:#3b3b38}
+.table.tour .r{grid-template-columns:64px 90px minmax(0,1fr)}
+.badge{background:var(--limebg);color:#111;border-radius:9px;padding:14px 18px}
+.badge b{display:block;font-size:18px}
+.badge span{font-size:12px;color:#3b3b38}
+.plist{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.plist .p{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:8px}
+.plist .p span{font-size:14px;font-weight:700}
+.plist .p b{font-size:24px}
+.dark .plist .p{border-color:#3a3b40}
+.feat{display:flex;gap:22px;align-items:flex-start;height:100%}
+.feat .info{flex:1;min-width:0}
+.feat .t{font-size:24px;font-weight:800;line-height:1.2}
+.feat .a{font-size:14px;color:var(--pink);font-weight:700;margin-top:6px}
+.feat .kv{grid-template-columns:1fr;margin-top:14px}
+.feat .kv .r{font-size:14px;padding:5px 0}
+.pf{font-size:20px;font-weight:800;margin-bottom:14px}
 
 /* cover */
-.cover{background:var(--dark);color:#fff;padding:0!important;min-height:297mm;display:flex;flex-direction:column}
-.cover .hero{display:block;width:100%;height:auto}
-.cover .cbody{padding:46px 56px 0;flex:1;display:flex;flex-direction:column}
-.cover .ck{font-size:11px;font-weight:800;letter-spacing:.3em;color:var(--lime)}
-.cover h1{font-size:54px;line-height:1.08;margin:16px 0 0;font-weight:800;letter-spacing:-.01em}
-.cover .cs{font-size:17px;color:#b9b9b5;margin-top:14px;line-height:1.6}
-.cover .cfoot{margin-top:auto;padding:28px 0 40px;display:flex;align-items:center;gap:14px;font-size:11px;font-weight:800;letter-spacing:.26em;color:#9b9b98}
-.cover .cfoot img{width:40px;height:auto}
-.sheet.coversheet{padding:0}
-.sheet.coversheet .cover{min-height:297mm}
+.cover{padding:0;background:var(--dark)}
+.cover .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cover .shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(18,18,22,.86) 0%,rgba(18,18,22,.55) 38%,rgba(18,18,22,0) 62%)}
+.cover .ctext{position:absolute;left:64px;bottom:70px;width:560px;color:#fff}
+.cover .ck{font-size:12.5px;font-weight:800;letter-spacing:.3em;color:var(--lime)}
+.cover h1{font-size:60px;line-height:1.06;margin:16px 0 0;font-weight:800}
+.cover .cs{font-size:17px;color:#d7d7d2;margin-top:14px;line-height:1.6}
+.cover .ctop{position:absolute;left:64px;top:44px;display:flex;align-items:center;gap:12px;font-size:11px;font-weight:800;letter-spacing:.28em;color:#fff}
+.cover .ctop img{width:34px;height:auto}
 
 /* artist one-pager */
-.ph{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:24px;align-items:start}
-.ph .pname{font-size:58px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:8px 0 0}
-.ph .ptag{font-size:13px;font-weight:700;margin-top:10px}
-.ph .pbio{font-size:12px;line-height:1.7;color:#4a4a47;margin:10px 0 0}
-.ph .pimg{width:190px;height:auto;border-radius:8px;display:block}
+.prof{padding:0;display:grid;grid-template-columns:300px 1fr}
+.prof .photo{width:300px;height:720px;object-fit:cover;object-position:50% 20%;display:block}
+.prof .pbody{padding:40px 52px 0 44px;display:flex;flex-direction:column;gap:11px;min-width:0}
+.prof .pimg{display:none}
+.prof .ph{display:block}
+.prof .pname{font-size:52px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:6px 0 0}
+.prof .ptag{font-size:13.5px;font-weight:700;margin-top:6px}
+.prof .pbio{font-size:12px;line-height:1.62;color:#4a4a47;margin:6px 0 0}
+.prof .badge{padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.prof .badge b{font-size:15px}
+.prof .badge span{font-size:11px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.kpis .tile .n{font-size:30px}
+.kpis .tile{padding:10px 12px}
+.kpis .tile .n{font-size:28px}
+.kpis .tile .l{font-size:9.5px;margin-top:5px}
 .socials{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
-.socials .s{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:8px 6px;text-align:center}
+.socials .s{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 4px;text-align:center}
 .socials .s b{display:block;font-size:15px;font-weight:800}
-.socials .s span{display:block;font-size:9px;color:var(--gray);margin-top:3px;line-height:1.3}
-.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.cols3 h4{font-size:13.5px;font-weight:800;margin:0 0 6px;padding-bottom:5px;border-bottom:2px solid var(--ink)}
-.cols3 h4+ul{margin-bottom:12px}
+.socials .s span{display:block;font-size:9px;color:var(--gray);margin-top:2px;line-height:1.25}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.cols3 h4{font-size:12px;font-weight:800;margin:0 0 4px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
+.cols3 h4+ul{margin-bottom:8px}
 .cols3 ul{margin:0;padding:0;list-style:none}
-.cols3 li{font-size:12px;line-height:1.5;color:#3e3e3b;padding:3px 0 3px 10px;position:relative}
-.cols3 li::before{content:"";position:absolute;left:0;top:9px;width:4px;height:4px;background:var(--pink);border-radius:50%}
+.cols3 li{font-size:10.8px;line-height:1.42;color:#3e3e3b;padding:2px 0 2px 10px;position:relative}
+.cols3 li::before{content:"";position:absolute;left:0;top:8px;width:4px;height:4px;background:var(--pink);border-radius:50%}
 .cols3 li b{color:var(--ink)}
-.minilbl{font-size:10px;font-weight:800;letter-spacing:.2em;color:var(--gray);text-transform:uppercase}
+.minilbl{font-size:9.5px;font-weight:800;letter-spacing:.2em;color:var(--gray);text-transform:uppercase}
 
 /* proposal */
-.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.opt{background:var(--dark);color:#fff;border-radius:10px;padding:22px 22px 24px}
-.opt .on{display:inline-block;background:var(--limebg);color:#111;font-weight:800;font-size:12px;border-radius:5px;padding:4px 8px}
-.opt h4{font-size:24px;margin:14px 0 10px}
-.opt p{font-size:15px;line-height:1.75;color:#cfcfcb;margin:0}
-.intent{font-size:22px;font-weight:800}
-.flex-note{font-size:14px;font-weight:700}
+.prop{display:flex;flex-direction:column;gap:20px}
+.prop .rule{display:none}
+.prop .intent{font-size:26px;font-weight:800;margin-top:8px}
+.prop .minilbl{color:#9b9b97}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.opt{background:var(--dark2);border-radius:10px;padding:26px 28px 28px}
+.opt .on{display:inline-block;background:var(--limebg);color:#111;font-weight:800;font-size:12.5px;border-radius:5px;padding:4px 9px}
+.opt h4{font-size:28px;margin:16px 0 12px;color:#fff}
+.opt p{font-size:17px;line-height:1.75;color:#cfcfcb;margin:0}
+.flex-note{font-size:16px;font-weight:700}
+.prop .h2{font-size:40px}
+.prop .kick{color:var(--lime)}
 
-/* ---------- edit affordances ---------- */
-.editing .f{outline:1px dashed transparent;outline-offset:2px;border-radius:2px;min-width:1.5em;display:inline-block}
-.editing .f:hover{outline-color:rgba(226,41,124,.5)}
+/* edit affordances */
+.editing .f{outline:1px dashed transparent;outline-offset:2px;border-radius:2px;min-width:1.2em;display:inline-block}
+.editing .f:hover{outline-color:rgba(226,41,124,.6)}
 .editing .f:focus{outline:2px solid var(--pink)}
 .editing .f:empty::before{content:attr(data-ph);color:var(--gray2);font-weight:600}
 .tile .f:empty::before{color:#77786f}
-.opt .f:empty::before{color:#77786f}
-.editing [data-html]{outline:1px dashed rgba(0,0,0,.08)}
 .editing [data-html] [contenteditable]:hover{outline:1px dashed rgba(226,41,124,.5)}
-.dropbox{border:2px dashed #c9c7bd;border-radius:8px;background:#ecebe4;color:#7d7c74;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:700;padding:22px 12px;cursor:pointer;min-height:90px;line-height:1.5}
-.dropbox small{font-weight:500;font-size:11px;opacity:.8}
+.dropbox{border:2px dashed #c9c7bd;border-radius:10px;background:#ecebe4;color:#7d7c74;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:15px;font-weight:700;cursor:pointer;line-height:1.6;width:100%;height:100%}
+.dropbox small{font-weight:500;font-size:12px;opacity:.85}
 .dropbox:hover,.dropbox.over{border-color:var(--pink);color:var(--pink)}
-.dropbox.tall{min-height:300px}
 .itemwrap{position:relative}
 .itemctl{position:absolute;top:-10px;right:-10px;display:none;gap:4px;z-index:3}
 .editing .itemwrap:hover>.itemctl{display:flex}
 .itemctl button{width:26px;height:26px;border-radius:50%;border:none;background:var(--dark);color:#fff;font-size:13px;cursor:pointer;line-height:26px;padding:0}
 .itemctl button.del{background:var(--pink)}
-.shot .swap{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;line-height:1.4}
-.editing .shot:hover .swap{display:flex}
-.addrow{font-size:12px;font-weight:700;color:var(--pink);background:none;border:1px dashed var(--pink);border-radius:6px;padding:6px 10px;cursor:pointer;align-self:flex-start}
+.editing .pic{cursor:pointer}
+.editing .pic:hover{outline:3px solid var(--pink);outline-offset:-3px}
+.addrow{font-size:12px;font-weight:700;color:var(--pink);background:none;border:1px dashed var(--pink);border-radius:6px;padding:5px 10px;cursor:pointer;align-self:flex-start;margin-top:8px}
 
-/* ---------- auto panel ---------- */
+/* auto panel */
 .panel{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100vw - 32px));max-height:46vh;display:flex;flex-direction:column;background:var(--bar);color:var(--bar-fg);border-radius:10px;box-shadow:0 16px 50px rgba(0,0,0,.35);z-index:60;font-size:13px}
 .panel header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #2d2e33;font-weight:700}
 .panel header span{flex:1}
@@ -204,25 +201,28 @@ button[data-arm]{border-color:var(--pink)!important;color:#ffb3d1!important}
 .panel li.run .st::after{content:"";display:inline-block;width:10px;height:10px;margin-left:6px;border:2px solid var(--bar-dim);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.panel li.run .st::after{animation:none}}
+body.dragging #deck{outline:3px dashed var(--pink);outline-offset:8px}
 
-body.dragging .doc{outline:3px dashed var(--pink);outline-offset:8px}
-
-@page{size:A4;margin:0}
+@page{size:1280px 720px;margin:0}
 @media print{
   html,body{background:none}
-  .bar,.panel,.hintline,#doc{display:none!important}
+  .bar,.panel,.hintline,.fbar{display:none!important}
   .stagewrap{padding:0;display:block}
-  #pages{display:block;zoom:1!important}
-  .sheet{box-shadow:none;break-after:page;page-break-after:always}
+  #deck{width:1280px;display:block}
+  .holder{width:1280px!important;height:720px!important;box-shadow:none;border-radius:0}
+  .slide{transform:none!important;break-after:page;page-break-after:always}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+.prof .sfoot{left:344px}
+.cols3 li{font-size:11.3px}
 </style>
 </head>
 <body>
 <div id="app">
 <div class="bar">
   <span class="brand">R3HAB × 徐明浩</span>
-  <span class="seg"><button id="mEdit" class="on">编辑</button><button id="mView">预览排版</button></span>
+  <span class="seg"><button id="mEdit" class="on">编辑</button><button id="mView">预览</button></span>
   <button id="bAuto" class="go">＋ 一键放入截图</button>
   <button id="bPdf">导出 PDF</button>
   <button id="bSave">下载 HTML</button>
@@ -230,9 +230,8 @@ body.dragging .doc{outline:3px dashed var(--pink);outline-offset:8px}
   <span class="status" id="status"></span>
 </div>
 <div class="stagewrap">
-  <div class="hintline"><b>用法：</b>把所有截图一次拖到页面上（或点「一键放入截图」，也可 Ctrl/⌘+V 粘贴），会自动判断是哪类截图、放进对应板块并读出数字。截图保持原比例。文字和数字都可以直接点击修改；没填的项在「预览排版」和 PDF 里自动隐藏。</div>
-  <div id="docwrap"><div id="doc" class="doc"></div></div>
-  <div id="pageswrap" hidden><div id="pages"></div></div>
+  <div class="hintline"><b>用法：</b>把截图一次拖到页面上（或点「一键放入截图」/ Ctrl+V 粘贴），自动识别、归到对应页面并读出数字。图片保持原比例，大小按每页内容自动排；一页放不下会自动续页。文字和数字点击即可修改，点图片可换图；每页上方的「＋」可往该页加截图。</div>
+  <div id="deck"></div>
 </div>
 <div class="panel" id="panel" hidden>
   <header><span id="panelTitle">截图识别</span><button id="panelClose" title="关闭">×</button></header>
@@ -437,247 +436,383 @@ function platformTotal(){
   return vs.length?fmt(vs.reduce((a,b)=>a+b,0))+'+':'';
 }
 
-/* ================= sections ================= */
-function blk(...kids){return h('div',{class:'blk'},...kids);}
-function keep(...kids){return h('div',{class:'blk keep'},...kids);}
-function secHead(no,en,title,desc){
-  return keep(h('div',{class:'kick'},no+' · '+en),h('h2',{class:'h2'},title),desc?h('p',{class:'desc'},desc):null,h('div',{class:'rule'}));
+/* ================= image ratios ================= */
+const AR=new Map();
+function loadAR(url){
+  if(!url||AR.has(url))return Promise.resolve();
+  return new Promise(res=>{const i=new Image();i.onload=()=>{AR.set(url,(i.naturalWidth/i.naturalHeight)||1);res();};i.onerror=()=>{AR.set(url,1);res();};i.src=url;});
 }
-function subHead(no,title,sub){return keep(h('div',{class:'h3'},h('span',{class:'no'},no),title),sub?h('div',{class:'sub'},sub):null);}
+const arOf=(url,dflt)=>url?(AR.get(url)||dflt||1):(dflt||1);
+function allUrls(){
+  const u=[];const add=o=>{if(o&&val(o.img))u.push(o.img);};
+  state.tags.forEach(add);state.posts.forEach(add);state.profiles.forEach(add);state.songs.forEach(add);
+  Object.values(state.platforms).forEach(add);state.spotify.imgs.forEach(add);state.collabs.forEach(add);
+  state.tours.imgs.forEach(add);state.extras.forEach(add);return u;
+}
+function fit(ar,bw,bh){return bw/bh>ar?{w:bh*ar,h:bh}:{w:bw,h:bw/ar};}
+
+/* a picture at an exact size that matches its own ratio */
+function PIC(obj,key,w,hh,type,label){
+  const im=h('img',{class:'pic',src:obj[key],alt:label||'',style:`width:${Math.round(w)}px;height:${Math.round(hh)}px`});
+  if(EDIT){im.title='点击换图';takeable(im,files=>setImage(obj,key,files[0],type));}
+  return im;
+}
+function DROP(label,fn,w,hh,multi){
+  const d=h('div',{class:'dropbox',style:w?`width:${Math.round(w)}px;height:${Math.round(hh)}px`:''},'＋ '+label,h('small',null,'点击上传 · 拖进来 · 悬停后粘贴'+(multi?' · 可多选':'')));
+  takeable(d,fn,multi);return d;
+}
+
+/* ---------- justified-row packer ----------
+   Every image in a row gets the same height; rows fill the width.
+   Tries 1..maxRows contiguous splits and keeps the one with the most image area. */
+function partitions(n,r){
+  const out=[];const seq=(a,b)=>Array.from({length:b-a},(_,k)=>a+k);
+  const rec=(s,k,acc)=>{if(k===1){out.push([...acc,seq(s,n)]);return;}for(let e=s+1;e<=n-k+1;e++)rec(e,k-1,[...acc,seq(s,e)]);};
+  rec(0,r,[]);return out;
+}
+function rowHeight(ars,ix,W,gap,minW,hcap){
+  let hh=hcap;
+  for(let it=0;it<5;it++){
+    let fixed=0,flex=0;ix.forEach(i=>{if(ars[i]*hh<minW)fixed+=minW;else flex+=ars[i];});
+    const avail=W-gap*(ix.length-1)-fixed;
+    if(flex===0)return avail>=0?hh:-1;
+    if(avail<=0)return -1;
+    hh=Math.min(hcap,avail/flex);
+  }
+  return hh;
+}
+function pack(ars,o){
+  const n=ars.length;let best=null;
+  for(let r=1;r<=Math.min(o.maxRows||2,n);r++){
+    for(const part of partitions(n,r)){
+      const rows=part.map(ix=>({ix,h:rowHeight(ars,ix,o.W,o.gap,o.minW||0,o.hcap)}));
+      if(rows.some(x=>x.h<=0))continue;
+      const avail=o.H-r*(o.cap||0)-(r-1)*o.rgap;if(avail<=0)continue;
+      const common=Math.min(...rows.map(x=>x.h));rows.forEach(x=>x.h=common);   /* same picture height on every row */
+      const sum=common*r;
+      if(sum>avail)rows.forEach(x=>x.h*=avail/sum);
+      let area=0,minLong=1e9;
+      rows.forEach(x=>x.ix.forEach(i=>{area+=ars[i]*x.h*x.h;minLong=Math.min(minLong,Math.max(ars[i]*x.h,x.h));}));
+      if(!best||area>best.area)best={rows,area,minLong};
+    }
+  }
+  return best;
+}
+/* split items into slides: keep adding while every picture stays readable */
+function chunk(items,o){
+  const pages=[];let cur=[];
+  items.forEach(it=>{
+    const trial=[...cur,it];const L=pack(trial.map(x=>x.ar),o);
+    if(cur.length&&(!L||L.minLong<o.minLong||trial.length>(o.max||99))){pages.push(cur);cur=[it];}
+    else cur=trial;
+  });
+  if(cur.length)pages.push(cur);
+  if(pages.length<2)return pages;
+  /* spread evenly so the last slide isn't left with one picture */
+  const n=pages.length,even=[];let k=0;
+  for(let p=0;p<n;p++){const size=Math.floor(items.length/n)+(p<items.length%n?1:0);even.push(items.slice(k,k+size));k+=size;}
+  return even.every(pg=>{const L=pack(pg.map(x=>x.ar),o);return L&&L.minLong>=o.minLong;})?even:pages;
+}
+function GAL(items,o,cellFn){
+  const L=pack(items.map(x=>x.ar),o);
+  const g=h('div',{class:'gal',style:`gap:${o.rgap}px`});
+  if(!L)return g;
+  L.rows.forEach(row=>{
+    const r=h('div',{class:'grow',style:`gap:${o.gap}px`});
+    row.ix.forEach(i=>{const it=items[i];const ih=row.h,iw=it.ar*ih;r.append(cellFn(it,iw,ih,Math.max(iw,o.minW||0)));});
+    g.append(r);
+  });
+  return g;
+}
+
+/* ================= slide scaffolding ================= */
+function slide(cls){return h('section',{class:'slide '+(cls||'')});}
+function foot(s){s.append(h('div',{class:'sfoot'},h('img',{src:LOGO,alt:''}),h('span',null,'R3HAB × 徐明浩 · 单曲合作提案'),h('span',{class:'pgno'})));return s;}
+function head(kick,no,title,desc){
+  return h('div',{class:'head'},h('div',{class:'kick'},kick),h('h2',{class:'h2'},no?h('span',{class:'no'},no):null,title),desc?h('p',{class:'desc'},desc):null);
+}
 function htmlBlock(name,cls){
   const d=h('div',{class:cls||''});d.dataset.html=name;
   d.innerHTML=state.html[name]||HTML_DEFAULT[name];
   d.querySelectorAll('img[data-src]').forEach(i=>{i.src=i.dataset.src==='portrait'?PORTRAIT:'';});
   if(EDIT){
-    d.querySelectorAll('h1,h2,h4,p,li,.ck,.cs,.kick,.ptag,.n,.l,.s b,.s span,.minilbl,.intent,.flex-note,.on').forEach(el=>{
+    d.querySelectorAll('h1,h2,h4,p,li,.ck,.cs,.kick,.ptag,.n,.l,.s b,.s span,.minilbl,.intent,.flex-note,.on,.badge b,.badge span').forEach(el=>{
       if(el.parentElement.closest('[contenteditable]'))return;el.contentEditable='true';});
     d.addEventListener('input',()=>{const c=d.cloneNode(true);c.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));
       c.querySelectorAll('img[data-src]').forEach(i=>i.setAttribute('src',''));state.html[name]=c.innerHTML;changed();});
   }
   return d;
 }
-function addBox(label,type,target,multi){
-  const d=h('div',{class:'dropbox'},'＋ '+label,h('small',null,'点击上传 · 拖进来 · 悬停后粘贴'+(multi?' · 可多选':'')));
-  takeable(d,files=>autoAdd(files,type,target),multi);
-  return d;
-}
+const K_SOC='02 · 社交媒体数据 SOCIAL MEDIA',K_MUS='02 · 音乐平台数据 MUSIC PLATFORMS';
+const AREA={W:1152,H:494};
+const withAdd=(s,...adds)=>{s._adds=adds;return s;};
+const tileEl=(obj,key,ph,label,cls)=>has(obj,key)?h('div',{class:'tile '+(cls||'')},h('div',{class:'n'},F(obj,key,ph)),h('div',{class:'l'},label)):null;
+const multiNote=(k,n)=>n>1?`（${k+1}/${n}）`:'';
 
-function renderCover(){
-  const s=h('section',{class:'sec cover'});
-  s.append(h('img',{class:'hero',src:HERO,alt:'R3HAB'}));
-  const b=htmlBlock('cover','cbody');
-  b.append(h('div',{class:'cfoot'},h('img',{src:LOGO,alt:'GREENROOM'}),'GREENROOM.AGENCY'));
-  s.append(b);
+/* ---------- cover + profile ---------- */
+function coverSlide(){
+  const s=slide('cover');
+  s.append(h('img',{class:'bg',src:HERO,alt:'R3HAB'}),h('div',{class:'shade'}),
+    h('div',{class:'ctop'},h('img',{src:LOGO,alt:'GREENROOM'}),'GREENROOM.AGENCY'),htmlBlock('cover','ctext'));
   return s;
 }
-function renderProfile(){
-  const s=h('section',{class:'sec'});
-  s.append(h('div',{class:'blk onepage'},htmlBlock('profile','')));
-  s.firstChild.firstChild.style.cssText='display:flex;flex-direction:column;gap:16px';
-  return s;
+function profileSlide(){
+  const s=slide('prof');
+  s.append(h('img',{class:'photo',src:PORTRAIT,alt:'R3HAB'}),htmlBlock('profile','pbody'));
+  return foot(s);
 }
 
-function renderData(){
-  const s=h('section',{class:'sec'});
-  const dateEl=F(state,'date','截取日期');
-  s.append(keep(h('div',{class:'kick'},'02 · 社交媒体与音乐平台数据 SOCIAL & MUSIC DATA'),
-    h('h2',{class:'h2'},'各大社交媒体 · 音乐平台数据'),
-    h('p',{class:'desc'},'所有数字为各平台 App 内显示数值，截取于 ',dateEl,'。'),
-    h('div',{class:'rule'})));
-
-  /* --- 2.1 Douyin tag --- */
-  if(EDIT||state.tags.length){
-    s.append(subHead('2.1','抖音话题榜','话题下的帖子数量与热度'));
-    state.tags.forEach((t,i)=>{
-      const lead=h('div',{class:'lead'},
-        h('div',{class:'tiles t2',style:'flex:1;min-width:300px'},
-          has(t,'posts')?h('div',{class:'tile'},h('div',{class:'n'},F(t,'posts','帖子数')),h('div',{class:'l'},'帖子')):null,
-          has(t,'heat')?h('div',{class:'tile'},h('div',{class:'n'},F(t,'heat','热度')),h('div',{class:'l'},'热度')):null),
-        h('div',{class:'what',style:'flex-basis:100%'},'抖音话题 ',F(t,'name','#话题名','',''),
-          EDIT?'':(val(t.posts)||val(t.heat)?' 已累计 '+[val(t.posts)&&val(t.posts)+' 帖子',val(t.heat)&&val(t.heat)+' 热度'].filter(Boolean).join('，')+'。':'')));
-      s.append(ITEM(state.tags,i,blk(lead,IMG(t,'img','话题页截图','mh-tag','douyin_tag'))));
-    });
-    if(EDIT)s.append(blk(addBox('添加抖音话题截图','douyin_tag',null,true)));
-  }
-
-  /* --- 2.2 hot posts --- */
-  if(EDIT||state.posts.length){
-    s.append(subHead('2.2','话题下热帖',state.posts.length?`代表性热帖 ${state.posts.length} 条`:''));
-    const cards=state.posts.map((p,i)=>{
-      const rows=[['点赞','likes'],['收藏','saves'],['评论','comments'],['分享','shares'],['播放','plays'],['日期','date']]
-        .filter(([,k])=>EDIT?k!=='plays'||val(p.plays):val(p[k]))
-        .map(([l,k])=>h('div',{class:'r'},h('span',null,l),h('span',null,F(p,k,'—'))));
-      return ITEM(state.posts,i,h('div',{class:'post'},IMG(p,'img','热帖截图','','douyin_post'),
-        has(p,'title')?h('div',{class:'pt'},F(p,'title','视频标题')):null,
-        has(p,'author')?h('div',{class:'pd'},F(p,'author','@发布账号')):null,
-        h('div',{class:'kv'},rows)));
-    });
-    if(EDIT)cards.push(addBox('添加热帖截图','douyin_post',null,true));
-    for(let i=0;i<cards.length;i+=4)s.append(blk(h('div',{class:'posts'},cards.slice(i,i+4))));
-  }
-
-  /* --- 2.3 artist profile pages --- */
-  if(EDIT||state.profiles.length){
-    s.append(subHead('2.3','艺人主页','主页粉丝与点赞数'));
-    state.profiles.forEach((p,i)=>{
-      const tiles=h('div',{class:'tiles t2'},
-        has(p,'followers')?h('div',{class:'tile'},h('div',{class:'n'},F(p,'followers','粉丝数')),h('div',{class:'l'},'粉丝')):null,
-        has(p,'likes')?h('div',{class:'tile'},h('div',{class:'n'},F(p,'likes','获赞数')),h('div',{class:'l'},'获赞 / 点赞')):null);
-      s.append(ITEM(state.profiles,i,blk(h('div',{class:'profile-item'},
-        h('div',null,h('div',{class:'pf'},F(p,'platform','平台')),tiles),
-        IMG(p,'img','主页截图','mh-prof','douyin_profile')))));
-    });
-    if(EDIT)s.append(blk(addBox('添加艺人主页截图（抖音 / 小红书 / 微博…）','douyin_profile',null,true)));
-  }
-
-  /* --- 2.4 NetEase hot songs --- */
-  if(EDIT||state.songs.length){
-    s.append(subHead('2.4','网易云音乐热歌','热歌点赞量'));
-    state.songs.forEach((g,i)=>{
-      if(i===0){
-        s.append(ITEM(state.songs,i,blk(h('div',{class:'lbl'},'热度最高'),
-          h('div',{class:'lead'},h('div',{class:'big'},F(g,'likes','点赞数'),h('span',{class:'u'},'点赞')),
-            h('div',{class:'what'},'《',F(g,'name','歌名'),'》 ',F(g,'artists','艺人'))),
-          IMG(g,'img','歌曲截图','mh-lead','netease_songs',true))));
-        if(state.songs.length>1||EDIT)s.append(keep(h('div',{class:'lbl'},'其他热歌')));
-      }else{
-        s.append(ITEM(state.songs,i,blk(h('div',{class:'pair'},
-          IMG(g,'img','歌曲截图','mh-row','netease_songs')||h('div'),
-          h('div',null,h('div',{class:'tt'},F(g,'name','歌名')),has(g,'artists')?h('div',{class:'ta'},F(g,'artists','艺人')):null,
-            h('div',{class:'tn'},F(g,'likes','点赞数'),h('small',null,'点赞')))))));
-      }
-    });
-    if(EDIT)s.append(blk(addBox('添加网易云热歌截图','netease_songs',null,true)));
-  }
-
-  /* --- 2.5 three platform followers --- */
-  const P=state.platforms,pk=[['netease','网易云音乐'],['qq','QQ 音乐'],['kugou','酷狗音乐']];
-  if(EDIT||pk.some(([k])=>val(P[k].followers)||val(P[k].img))){
-    s.append(subHead('2.5','网易云 · QQ 音乐 · 酷狗 主页粉丝'));
-    const tot=platformTotal();
-    s.append(blk(h('div',{class:'total'},h('div',{class:'big',id:'ptotal'},tot||'—'),h('div',{class:'what'},'三大音乐平台粉丝总量')),
-      h('div',{class:'plat'},pk.map(([k,n])=>(EDIT||val(P[k].followers)||val(P[k].img))?h('div',null,
-        h('div',{class:'pn'},n),h('div',{class:'pv'},F(P[k],'followers','粉丝数'),h('small',null,'粉丝')),
-        IMG(P[k],'img',n+' 主页截图','mh-plat',k+'_profile',true)):h('div')))));
-  }
-
-  /* --- 2.6 Spotify --- */
-  const sp=state.spotify;
-  s.append(subHead('2.6','Spotify 歌曲成绩'));
-  s.append(blk(h('div',{class:'tiles t2'},
-    has(sp,'monthly')?h('div',{class:'tile'},h('div',{class:'n'},F(sp,'monthly','月听众')),h('div',{class:'l'},'Monthly Listeners 月听众')):null,
-    has(sp,'followers')?h('div',{class:'tile'},h('div',{class:'n'},F(sp,'followers','粉丝')),h('div',{class:'l'},'Followers 粉丝')):null)));
-  if(sp.tracks.length||EDIT){
-    s.append(blk(h('div',{class:'table'},sp.tracks.map((t,i)=>ITEM(sp.tracks,i,h('div',{class:'r'},h('span',{class:'i'},String(i+1).padStart(2,'0')),F(t,'name','歌名'),h('span',{class:'v'},F(t,'plays','播放量'))))),
-      EDIT?h('button',{class:'addrow',style:'margin-top:8px',onclick:()=>{sp.tracks.push({name:'',plays:''});changed(true);}},'＋ 加一行'):null)));
-  }
-  sp.imgs.forEach((o,i)=>s.append(ITEM(sp.imgs,i,blk(IMG(o,'img','Spotify 截图','mh-sp','spotify')))));
-  if(EDIT)s.append(blk(addBox('添加 Spotify 截图','spotify',null,true)));
-  return s;
-}
-
-function renderCollabs(){
-  const s=h('section',{class:'sec'});
-  s.append(secHead('03','CHINA × GLOBAL HITS','中外合作爆款单曲','R3HAB 与华语及亚洲艺人合作单曲的平台成绩。'));
-  state.collabs.forEach((c,i)=>{
-    const rows=[['播放','plays'],['收藏 / 点赞','likes'],['平台','platform'],['发行','year'],['成绩','note']]
-      .filter(([,k])=>EDIT||val(c[k])).map(([l,k])=>h('div',{class:'r'},h('span',null,l),h('span',null,F(c,k,'—'))));
-    s.append(ITEM(state.collabs,i,blk(h('div',{class:'pair rev'},
-      IMG(c,'img','单曲截图','mh-collab','collab_song')||h('div'),
-      h('div',null,h('div',{class:'tt',style:'font-size:20px'},F(c,'song','歌名')),h('div',{class:'ta',style:'color:var(--pink);font-weight:700'},F(c,'artists','R3HAB × 合作艺人')),
-        h('div',{class:'kv'},rows))))));
+/* ---------- 2.1 Douyin tag ---------- */
+function tagSlides(){
+  const list=state.tags;
+  if(!list.length)return EDIT?[withAdd(foot(emptySlide(K_SOC,'2.1','抖音话题榜','添加抖音话题截图','douyin_tag')),['添加话题截图','douyin_tag'])]:[];
+  return list.map((t,i)=>{
+    const s=slide();const g=h('div',{class:'split',style:'grid-template-columns:420px 1fr'});
+    const name=F(t,'name','#话题名');
+    const sentence=EDIT?null:h('p',{class:'desc',style:'font-size:17px'},'抖音话题 '+(val(t.name)||'')+(val(t.posts)||val(t.heat)?' 已累计 '+[val(t.posts)&&val(t.posts)+' 帖子',val(t.heat)&&val(t.heat)+' 热度'].filter(Boolean).join('，')+'。':''));
+    const tx=h('div',{class:'tx'},head(K_SOC,'2.1','抖音话题榜'+multiNote(i,list.length)),
+      h('div',{style:'font-size:30px;font-weight:800;color:var(--pink);margin-top:8px'},name),sentence,
+      h('div',{class:'tiles',style:'margin-top:22px'},tileEl(t,'posts','帖子数','帖子'),tileEl(t,'heat','热度','热度')));
+    const pa=h('div',{class:'pa',style:'display:flex;align-items:center;justify-content:center'});
+    if(val(t.img)){const f=fit(arOf(t.img),688,612);pa.append(PIC(t,'img',f.w,f.h,'douyin_tag','抖音话题截图'));}
+    else if(EDIT)pa.append(DROP('话题页截图',fs=>setImage(t,'img',fs[0],'douyin_tag')));
+    g.append(tx,pa);s.append(EDIT?ITEM(list,i,g):g);
+    return withAdd(foot(s),['添加话题截图','douyin_tag']);
   });
-  if(EDIT)s.append(blk(addBox('添加合作单曲截图','collab_song',null,true)));
-  if(!EDIT&&!state.collabs.length)s.append(blk(h('div',{class:'empty-note'},'（待补充）')));
+}
+function emptySlide(kick,no,title,label,type,desc){
+  const s=slide();s.append(head(kick,no,title,desc||null),h('div',{class:'area'},DROP(label,fs=>autoAdd(fs,type),null,null,true)));
   return s;
 }
 
-function renderTours(){
-  const s=h('section',{class:'sec'});const T=state.tours;
-  s.append(secHead('04','CHINA TOURING','艺人往期中国巡演',null));
-  s.append(blk(h('div',{class:'badge'},h('b',null,'首位在中国连续售罄 15 场演出的电子音乐艺人'),h('span',null,'First dance music artist to sell out 15 consecutive shows in China'))));
-  const rows=T.rows.filter(r=>EDIT||val(r.year)||val(r.city)||val(r.venue));
-  if(rows.length||EDIT)s.append(blk(h('div',{class:'table tour'},
-    T.rows.map((r,i)=>(EDIT||val(r.year)||val(r.city)||val(r.venue))?ITEM(T.rows,i,h('div',{class:'r'},h('span',{class:'i'},F(r,'year','年份')),h('b',null,F(r,'city','城市')),F(r,'venue','场地 / 演出名称'))):null),
-    EDIT?h('button',{class:'addrow',style:'margin-top:8px',onclick:()=>{T.rows.push({year:'',city:'',venue:''});changed(true);}},'＋ 加一场'):null)));
-  const figs=T.imgs.map((o,i)=>ITEM(T.imgs,i,IMG(o,'img','演出照片','mh-tour','tour',true)));
-  if(EDIT)figs.push(addBox('添加演出照片 / 海报','tour',null,true));
-  for(let i=0;i<figs.length;i+=2)s.append(blk(h('div',{class:'grid2'},figs.slice(i,i+2))));
-  return s;
+/* ---------- 2.2 hot posts ---------- */
+const POST_O={W:1152,H:494,cap:134,gap:16,rgap:16,minW:176,hcap:420,maxRows:2,minLong:300,max:6};
+function postSlides(){
+  const list=state.posts;
+  if(!list.length)return EDIT?[withAdd(foot(emptySlide(K_SOC,'2.2','话题下热帖','添加热帖截图','douyin_post')),['添加热帖截图','douyin_post'])]:[];
+  const items=list.map((p,i)=>({obj:p,i,ar:arOf(p.img,0.46)}));
+  const pages=chunk(items,POST_O);
+  return pages.map((pg,k)=>{
+    const s=slide();
+    s.append(head(K_SOC,'2.2','话题下热帖'+multiNote(k,pages.length)));
+    s.append(h('div',{class:'area'},GAL(pg,POST_O,(it,iw,ih,cw)=>{
+      const p=it.obj;
+      const rows=[['点赞','likes'],['收藏','saves'],['评论','comments'],['分享','shares'],['播放','plays'],['日期','date']]
+        .filter(([,key])=>EDIT?(key!=='plays'||val(p.plays)):val(p[key]))
+        .map(([l,key])=>h('div',{class:'r'},h('span',null,l),h('span',null,F(p,key,'—'))));
+      const pic=val(p.img)?PIC(p,'img',iw,ih,'douyin_post','热帖截图'):(EDIT?DROP('热帖截图',fs=>setImage(p,'img',fs[0],'douyin_post'),iw,ih):h('div',{style:`width:${iw}px;height:${ih}px`}));
+      const cell=h('div',{class:'cell',style:`width:${cw}px`},pic,
+        h('div',{class:'cap',style:`height:${POST_O.cap-8}px`},
+          has(p,'title')?h('div',{class:'ct'},F(p,'title','视频标题')):null,
+          has(p,'author')?h('div',{class:'ca'},F(p,'author','@发布账号')):null,
+          h('div',{class:'kv'},rows)));
+      return ITEM(list,it.i,cell);
+    })));
+    return withAdd(foot(s),['添加热帖截图','douyin_post']);
+  });
 }
-function renderProposal(){
-  const s=h('section',{class:'sec'});
-  const b=htmlBlock('proposal','');b.style.cssText='display:flex;flex-direction:column;gap:18px';
-  s.append(blk(b));return s;
+
+/* ---------- 2.3 artist pages ---------- */
+function profileSlides(){
+  const list=state.profiles;
+  if(!list.length)return EDIT?[withAdd(foot(emptySlide(K_SOC,'2.3','艺人主页','添加艺人主页截图（抖音 / 小红书 / 微博…）','douyin_profile','粉丝与点赞数')),['添加主页截图','douyin_profile'])]:[];
+  const out=[];
+  for(let k=0;k<list.length;k+=2){
+    const grp=list.slice(k,k+2).map((p,j)=>({p,i:k+j}));
+    const s=slide();
+    s.append(head(K_SOC,'2.3','艺人主页'+multiNote(k/2,Math.ceil(list.length/2)),'主页粉丝与点赞数'));
+    const area=h('div',{class:'area',style:`display:grid;grid-template-columns:repeat(${grp.length},minmax(0,1fr));gap:48px`});
+    const colW=grp.length===1?AREA.W:(AREA.W-48)/2, txW=grp.length===1?320:210;
+    grp.forEach(({p,i})=>{
+      const boxW=colW-txW-28;
+      const tx=h('div',{style:`width:${txW}px;flex:none`},h('div',{class:'pf'},F(p,'platform','平台')),
+        h('div',{class:'tiles'},tileEl(p,'followers','粉丝数','粉丝'),tileEl(p,'likes','获赞数','获赞 / 点赞')));
+      let pic;
+      if(val(p.img)){const f=fit(arOf(p.img),boxW,AREA.H);pic=PIC(p,'img',f.w,f.h,'douyin_profile','主页截图');}
+      else pic=EDIT?DROP('主页截图',fs=>setImage(p,'img',fs[0],'douyin_profile'),Math.min(boxW,280),AREA.H):null;
+      area.append(ITEM(list,i,h('div',{style:'display:flex;gap:28px;align-items:flex-start;height:100%'},tx,pic)));
+    });
+    s.append(area);out.push(withAdd(foot(s),['添加主页截图','douyin_profile']));
+  }
+  return out;
 }
-function renderExtras(){
-  if(!state.extras.length)return null;
-  const s=h('section',{class:'sec'});
-  s.append(secHead('附','APPENDIX','补充截图','未能自动归类的截图，可移到对应板块或删除。'));
-  state.extras.forEach((o,i)=>s.append(ITEM(state.extras,i,blk(IMG(o,'img','截图','mh-extra'),has(o,'caption')?h('div',{class:'sub'},F(o,'caption','说明')):null))));
-  return s;
+
+/* ---------- 2.4 NetEase hot songs ---------- */
+const SONG_O={W:1152,H:470,cap:50,gap:18,rgap:18,minW:160,hcap:380,maxRows:3,minLong:280,max:9};
+function songSlides(){
+  const list=state.songs;
+  if(!list.length)return EDIT?[withAdd(foot(emptySlide(K_MUS,'2.4','网易云音乐热歌','添加网易云热歌截图','netease_songs','热歌点赞量')),['添加网易云截图','netease_songs'])]:[];
+  const items=list.map((g,i)=>({obj:g,i,ar:val(g.img)?arOf(g.img):2.4}));
+  const pages=chunk(items,SONG_O);
+  const top=list[0];
+  return pages.map((pg,k)=>{
+    const s=slide();
+    const desc=(val(top.likes)||EDIT)?['热度最高：《',F(top,'name','歌名'),'》 ',h('b',{style:'color:var(--ink)'},F(top,'likes','点赞数')),' 点赞']:null;
+    s.append(head(K_MUS,'2.4','网易云音乐热歌'+multiNote(k,pages.length),desc));
+    s.append(h('div',{class:'area',style:'top:182px'},GAL(pg,SONG_O,(it,iw,ih,cw)=>{
+      const g=it.obj;
+      const pic=val(g.img)?PIC(g,'img',iw,ih,'netease_songs','歌曲截图')
+        :h('div',{class:'pic',style:`width:${iw}px;height:${ih}px;display:flex;flex-direction:column;justify-content:center;padding:14px 18px;background:var(--dark);color:#fff`},
+            h('div',{style:'font-weight:800;font-size:16px'},val(g.name)),h('div',{style:'color:var(--lime);font-weight:800;font-size:24px;margin-top:4px'},val(g.likes)));
+      return ITEM(list,it.i,h('div',{class:'cell',style:`width:${cw}px`},pic,
+        h('div',{class:'cap',style:`height:${SONG_O.cap-8}px`},h('div',{class:'ct'},'《',F(g,'name','歌名'),'》',has(g,'artists')?h('span',{class:'ca',style:'font-weight:500;margin-left:6px'},F(g,'artists','艺人')):null),
+          h('div',{class:'cn'},F(g,'likes','点赞数'),h('small',null,'点赞')))));
+    })));
+    return withAdd(foot(s),['添加网易云截图','netease_songs']);
+  });
 }
-function sections(){return[renderCover(),renderProfile(),renderData(),renderCollabs(),renderTours(),renderProposal(),renderExtras()].filter(Boolean);}
+
+/* ---------- 2.5 NetEase / QQ / Kugou followers ---------- */
+function platformSlide(){
+  const P=state.platforms,pk=[['netease','网易云音乐'],['qq','QQ 音乐'],['kugou','酷狗音乐']];
+  const any=pk.some(([k])=>val(P[k].followers)||val(P[k].img));
+  if(!EDIT&&!any)return[];
+  const s=slide();const g=h('div',{class:'split',style:'grid-template-columns:400px 1fr'});
+  const tot=platformTotal();
+  const tx=h('div',{class:'tx'},head(K_MUS,'2.5','三大音乐平台主页粉丝'),
+    h('div',{class:'tile',style:'margin-top:14px;padding:22px 22px 18px'},h('div',{class:'n',id:'ptotal',style:'font-size:60px'},tot||'—'),h('div',{class:'l'},'网易云 + QQ 音乐 + 酷狗 粉丝总量')),
+    h('div',{class:'plist'},pk.map(([k,n])=>(EDIT||val(P[k].followers))?h('div',{class:'p'},h('span',null,n),h('b',null,F(P[k],'followers','粉丝数'))):null)));
+  const O={W:708,H:560,cap:28,gap:16,rgap:16,minW:0,hcap:560,maxRows:1};
+  const items=pk.filter(([k])=>val(P[k].img)||EDIT).map(([k,n])=>({k,n,ar:val(P[k].img)?arOf(P[k].img):0.5}));
+  const pa=h('div',{class:'pa',style:'padding-top:20px'});
+  if(items.length)pa.append(GAL(items,O,(it,iw,ih,cw)=>h('div',{class:'cell',style:`width:${cw}px`},
+    val(P[it.k].img)?PIC(P[it.k],'img',iw,ih,it.k+'_profile',it.n+' 主页截图'):DROP(it.n+' 主页',fs=>setImage(P[it.k],'img',fs[0],it.k+'_profile'),iw,ih),
+    h('div',{class:'cap',style:'text-align:center;font-weight:800'},it.n))));
+  g.append(tx,pa);s.append(g);
+  return[withAdd(foot(s),['添加网易云 / QQ / 酷狗主页截图','netease_profile'])];
+}
+
+/* ---------- 2.6 Spotify ---------- */
+function spotifySlides(){
+  const sp=state.spotify;
+  const O={W:688,H:612,cap:0,gap:16,rgap:16,minW:0,hcap:612,maxRows:2,minLong:300,max:4};
+  const items=sp.imgs.map((o,i)=>({obj:o,i,ar:arOf(o.img)}));
+  const pages=items.length?chunk(items,O):[[]];
+  const out=[];
+  const s=slide();const g=h('div',{class:'split',style:'grid-template-columns:420px 1fr'});
+  const tx=h('div',{class:'tx'},head(K_MUS,'2.6','Spotify 歌曲成绩'),
+    h('div',{class:'tiles',style:'grid-template-columns:1fr 1fr;margin-top:12px'},tileEl(sp,'monthly','月听众','月听众 Monthly'),tileEl(sp,'followers','粉丝','粉丝 Followers')),
+    (sp.tracks.length||EDIT)?h('div',{class:'table'},sp.tracks.map((t,i)=>ITEM(sp.tracks,i,h('div',{class:'r'},h('span',{class:'i'},String(i+1).padStart(2,'0')),F(t,'name','歌名'),h('span',{class:'v'},F(t,'plays','播放量'))))),
+      EDIT?h('button',{class:'addrow',onclick:()=>{sp.tracks.push({name:'',plays:''});changed(true);}},'＋ 加一行'):null):null);
+  const pa=h('div',{class:'pa'});
+  if(pages[0].length)pa.append(GAL(pages[0],O,(it,iw,ih)=>ITEM(sp.imgs,it.i,PIC(it.obj,'img',iw,ih,'spotify','Spotify 截图'))));
+  else if(EDIT)pa.append(DROP('Spotify 截图',fs=>autoAdd(fs,'spotify'),null,null,true));
+  g.append(tx,pa);s.append(g);out.push(withAdd(foot(s),['添加 Spotify 截图','spotify']));
+  const FO={W:1152,H:494,cap:0,gap:16,rgap:16,minW:0,hcap:494,maxRows:2,minLong:320,max:4};
+  const rest=chunk(pages.slice(1).flat(),FO);
+  rest.forEach((pg,k)=>{const c=slide();c.append(head(K_MUS,'2.6','Spotify 歌曲成绩（续）'),h('div',{class:'area'},GAL(pg,FO,(it,iw,ih)=>ITEM(sp.imgs,it.i,PIC(it.obj,'img',iw,ih,'spotify','Spotify 截图')))));out.push(withAdd(foot(c),['添加 Spotify 截图','spotify']));});
+  return out;
+}
+
+/* ---------- 3 collabs ---------- */
+function collabSlides(){
+  const list=state.collabs;const K='03 · 中外合作 CHINA × GLOBAL';
+  if(!list.length){
+    if(EDIT)return[withAdd(foot(emptySlide(K,'','中外合作爆款单曲','添加合作单曲截图','collab_song','R3HAB 与华语及亚洲艺人合作单曲的平台成绩')),['添加合作单曲截图','collab_song'])];
+    const s=slide();s.append(head(K,'','中外合作爆款单曲'),h('div',{class:'area'},h('div',{class:'empty-note'},'（待补充）')));return[foot(s)];
+  }
+  const out=[];const n=Math.ceil(list.length/2);
+  for(let k=0;k<list.length;k+=2){
+    const grp=list.slice(k,k+2).map((c,j)=>({c,i:k+j}));
+    const s=slide();s.append(head(K,'','中外合作爆款单曲'+multiNote(k/2,n),'R3HAB 与华语及亚洲艺人合作单曲的平台成绩'));
+    const area=h('div',{class:'area',style:`display:grid;grid-template-columns:repeat(${grp.length},minmax(0,1fr));gap:48px`});
+    const colW=grp.length===1?AREA.W:(AREA.W-48)/2;
+    grp.forEach(({c,i})=>{
+      const infoW=grp.length===1?420:230;const boxW=colW-infoW-22;
+      let pic=null;
+      if(val(c.img)){const f=fit(arOf(c.img),boxW,AREA.H);pic=PIC(c,'img',f.w,f.h,'collab_song','单曲截图');}
+      else if(EDIT)pic=DROP('单曲截图',fs=>setImage(c,'img',fs[0],'collab_song'),Math.min(boxW,300),300);
+      const rows=[['播放','plays'],['收藏 / 点赞','likes'],['平台','platform'],['发行','year'],['成绩','note']]
+        .filter(([,key])=>EDIT||val(c[key])).map(([l,key])=>h('div',{class:'r'},h('span',null,l),h('span',null,F(c,key,'—'))));
+      area.append(ITEM(list,i,h('div',{class:'feat',style:grp.length===1?'justify-content:center':''},pic,h('div',{class:'info',style:`flex:0 0 ${infoW}px`},
+        h('div',{class:'t'},F(c,'song','歌名')),h('div',{class:'a'},F(c,'artists','R3HAB × 合作艺人')),h('div',{class:'kv'},rows)))));
+    });
+    s.append(area);out.push(withAdd(foot(s),['添加合作单曲截图','collab_song']));
+  }
+  return out;
+}
+
+/* ---------- 4 touring ---------- */
+function tourSlides(){
+  const T=state.tours;const K='04 · 中国巡演 CHINA TOURING';
+  const O={W:668,H:612,cap:0,gap:16,rgap:16,minW:0,hcap:612,maxRows:2,minLong:300,max:4};
+  const items=T.imgs.map((o,i)=>({obj:o,i,ar:arOf(o.img)}));
+  const pages=items.length?chunk(items,O):[[]];
+  const s=slide();const g=h('div',{class:'split',style:'grid-template-columns:440px 1fr'});
+  const rows=T.rows.map((r,i)=>(EDIT||val(r.year)||val(r.city)||val(r.venue))?ITEM(T.rows,i,h('div',{class:'r'},h('span',{class:'i'},F(r,'year','年份')),h('b',null,F(r,'city','城市')),F(r,'venue','场地 / 演出名称'))):null);
+  const tx=h('div',{class:'tx'},head(K,'','艺人往期中国巡演'),
+    h('div',{class:'badge',style:'margin-top:10px'},h('b',null,'首位在中国连续售罄 15 场演出的电子音乐艺人'),h('span',null,'First dance music artist to sell out 15 consecutive shows in China')),
+    h('div',{class:'table tour'},rows,EDIT?h('button',{class:'addrow',onclick:()=>{T.rows.push({year:'',city:'',venue:''});changed(true);}},'＋ 加一场'):null));
+  const pa=h('div',{class:'pa'});
+  if(pages[0].length)pa.append(GAL(pages[0],O,(it,iw,ih)=>ITEM(T.imgs,it.i,PIC(it.obj,'img',iw,ih,'tour','演出照片'))));
+  else if(EDIT)pa.append(DROP('演出照片 / 海报',fs=>autoAdd(fs,'tour'),null,null,true));
+  g.append(tx,pa);s.append(g);
+  const out=[withAdd(foot(s),['添加演出照片','tour'])];
+  const FO={W:1152,H:494,cap:0,gap:16,rgap:16,minW:0,hcap:494,maxRows:2,minLong:320,max:4};
+  chunk(pages.slice(1).flat(),FO).forEach(pg=>{const c=slide();c.append(head(K,'','艺人往期中国巡演（续）'),h('div',{class:'area'},GAL(pg,FO,(it,iw,ih)=>ITEM(T.imgs,it.i,PIC(it.obj,'img',iw,ih,'tour','演出照片')))));out.push(withAdd(foot(c),['添加演出照片','tour']));});
+  return out;
+}
+
+/* ---------- 5 proposal ---------- */
+function proposalSlide(){
+  const s=slide('dark');const b=htmlBlock('proposal','prop');
+  b.style.cssText='position:absolute;inset:60px 64px 70px 64px;justify-content:center';
+  s.append(b);return[foot(s)];
+}
+
+/* ---------- appendix ---------- */
+function extraSlides(){
+  const list=state.extras;if(!list.length)return[];
+  const O={W:1152,H:494,cap:26,gap:16,rgap:16,minW:0,hcap:460,maxRows:2,minLong:320,max:6};
+  const items=list.map((o,i)=>({obj:o,i,ar:arOf(o.img)}));
+  return chunk(items,O).map(pg=>{const s=slide();
+    s.append(head('附 · APPENDIX','','补充截图',EDIT?'未能自动归类的截图：删除，或在对应板块重新上传':null),
+      h('div',{class:'area'},GAL(pg,O,(it,iw,ih,cw)=>ITEM(list,it.i,h('div',{class:'cell',style:`width:${cw}px`},PIC(it.obj,'img',iw,ih,null,'截图'),h('div',{class:'cap'},has(it.obj,'caption')?h('div',{class:'ca'},F(it.obj,'caption','说明')):null))))));
+    return foot(s);});
+}
+
+function buildSlides(){
+  return[coverSlide(),profileSlide(),...tagSlides(),...postSlides(),...profileSlides(),...songSlides(),
+    ...platformSlide(),...spotifySlides(),...collabSlides(),...tourSlides(),...proposalSlide(),...extraSlides()];
+}
 
 /* ================= render ================= */
-const doc=$('doc'),pagesEl=$('pages');
-function zoomFor(){return Math.min(1,(window.innerWidth-32)/794);}
-function render(){
-  if(EDIT){
-    const y=window.scrollY;
-    doc.className='doc editing';doc.innerHTML='';sections().forEach(s=>doc.append(s));
-    $('docwrap').style.zoom=zoomFor();
-    window.scrollTo(0,y);
-    return Promise.resolve();
-  }
-  return paginate();
+const deck=$('deck');
+let rtoken=0;
+async function render(){
+  const my=++rtoken;
+  await Promise.all(allUrls().map(loadAR));
+  if(my!==rtoken)return;
+  const y=window.scrollY;
+  document.body.classList.toggle('editing',EDIT);document.body.classList.toggle('view',!EDIT);
+  const slides=buildSlides();
+  deck.innerHTML='';
+  slides.forEach((s,i)=>{
+    const pg=s.querySelector('.pgno');if(pg)pg.textContent=String(i+1).padStart(2,'0');
+    const bar=h('div',{class:'fbar'},h('span',{class:'pg'},String(i+1).padStart(2,'0')));
+    (s._adds||[]).forEach(([label,type])=>bar.append(h('button',{onclick:()=>pick(true,fs=>autoAdd(fs,type))},'＋ '+label)));
+    deck.append(h('div',{class:'frame'},bar,h('div',{class:'holder'},s)));
+  });
+  layout();
+  window.scrollTo(0,y);
 }
-let changeTimer=null;
+function layout(){
+  deck.querySelectorAll('.frame').forEach(f=>{
+    const sc=f.clientWidth/1280;
+    f.querySelector('.slide').style.transform='scale('+sc+')';
+    f.querySelector('.holder').style.height=(720*sc)+'px';
+  });
+}
+window.addEventListener('resize',layout);
+let rtimer=null;
 function changed(structural){
   save();
   const t=$('ptotal');if(t)t.textContent=platformTotal()||'—';
-  if(structural)render();
+  if(structural){clearTimeout(rtimer);rtimer=setTimeout(render,30);}
 }
-
-/* ---- pagination: whole blocks only, each section starts a new A4 sheet ---- */
-const PAGE_H=1123,TOP=56,BOTTOM=70,GAP=18;
-let ptoken=0;
-async function paginate(){
-  const my=++ptoken;
-  const m=h('div',{class:'measure'});document.body.append(m);
-  const secs=sections();secs.forEach(s=>m.append(s));
-  await Promise.all([...m.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):null));
-  if(my!==ptoken){m.remove();return;}
-  pagesEl.innerHTML='';
-  let pageNo=0;
-  const newSheet=(cover)=>{
-    pageNo++;
-    const sh=h('div',{class:'sheet'+(cover?' coversheet':'')});
-    const flow=h('div',{class:'flow'});sh.append(flow);
-    if(!cover)sh.append(h('div',{class:'pfoot'},h('img',{src:LOGO,alt:''}),h('span',null,'R3HAB × 徐明浩 · 单曲合作提案'),h('span',null,String(pageNo).padStart(2,'0'))));
-    pagesEl.append(sh);return flow;
-  };
-  const avail=PAGE_H-TOP-BOTTOM;
-  secs.forEach(sec=>{
-    if(sec.classList.contains('cover')){newSheet(true);const sh=pagesEl.lastChild;sh.innerHTML='';sh.append(sec);return;}
-    const blocks=[...sec.querySelectorAll(':scope > .blk')];
-    let flow=newSheet(false),used=0;
-    blocks.forEach((b,i)=>{
-      const hgt=b.getBoundingClientRect().height;
-      let need=hgt;
-      if(b.classList.contains('keep')&&blocks[i+1])need+=GAP+blocks[i+1].getBoundingClientRect().height;
-      if(used>0&&used+GAP+need>avail){flow=newSheet(false);used=0;}
-      flow.append(b);used+=(used?GAP:0)+hgt;
-    });
-  });
-  m.remove();
-  $('pageswrap').style.zoom=zoomFor();
-}
-window.addEventListener('resize',()=>{$('docwrap').style.zoom=zoomFor();$('pageswrap').style.zoom=zoomFor();});
-
 function setMode(edit){
   EDIT=edit;$('mEdit').classList.toggle('on',edit);$('mView').classList.toggle('on',!edit);
-  $('docwrap').hidden=!edit;$('pageswrap').hidden=edit;return render();
+  return render();
 }
 $('mEdit').onclick=()=>setMode(true);
 $('mView').onclick=()=>setMode(false);
@@ -852,20 +987,21 @@ function loadScript(src){return new Promise((res,rej)=>{const s=h('script',{src}
 async function exportPdf(){
   const b=$('bPdf');b.disabled=true;const wasEdit=EDIT;
   try{
-    if(EDIT)await setMode(false);else await paginate();
+    await setMode(false);
     status('正在准备 PDF…');
     if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
     if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    const wrap=$('pageswrap');const z=wrap.style.zoom;wrap.style.zoom=1;
-    const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'px',format:[794,1123],hotfixes:['px_scaling'],compress:true});
-    const sheets=[...pagesEl.querySelectorAll('.sheet')];
-    for(let i=0;i<sheets.length;i++){
-      status(`正在生成 PDF ${i+1}/${sheets.length}`);
-      const c=await window.html2canvas(sheets[i],{scale:2,logging:false,backgroundColor:null,width:794,height:1123});
-      if(i)pdf.addPage([794,1123],'portrait');
-      pdf.addImage(c.toDataURL('image/jpeg',0.9),'JPEG',0,0,794,1123);
+    const pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'px',format:[1280,720],hotfixes:['px_scaling'],compress:true});
+    const stage=h('div',{style:'position:fixed;left:-20000px;top:0;width:1280px;height:720px;overflow:hidden'});document.body.append(stage);
+    const slides=[...deck.querySelectorAll('.slide')];
+    for(let i=0;i<slides.length;i++){
+      status(`正在生成 PDF ${i+1}/${slides.length}`);
+      const c=slides[i].cloneNode(true);c.style.transform='none';stage.innerHTML='';stage.append(c);
+      const cv=await window.html2canvas(c,{scale:2,logging:false,width:1280,height:720,backgroundColor:null});
+      if(i)pdf.addPage([1280,720],'landscape');
+      pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,1280,720);
     }
-    wrap.style.zoom=z;
+    stage.remove();
     await deliver(pdf.output('blob'),'R3HAB_x_徐明浩_合作提案_'+stamp()+'.pdf');
   }catch(e){
     if(!hasClaude){status('');window.print();}
@@ -874,13 +1010,13 @@ async function exportPdf(){
 }
 $('bPdf').onclick=exportPdf;
 window.__exportPdf=exportPdf;
+window.addEventListener('beforeprint',()=>deck.querySelectorAll('.slide').forEach(s=>s.style.transform='none'));
+window.addEventListener('afterprint',layout);
 
 function standaloneHTML(){
   const app=$('app').cloneNode(true);
-  app.querySelector('#doc').innerHTML='';app.querySelector('#pages').innerHTML='';app.querySelector('#jobs').innerHTML='';
+  app.querySelector('#deck').innerHTML='';app.querySelector('#jobs').innerHTML='';
   app.querySelector('#panel').setAttribute('hidden','');app.querySelector('#status').textContent='';
-  app.querySelector('#docwrap').removeAttribute('style');app.querySelector('#pageswrap').removeAttribute('style');
-  app.querySelector('#docwrap').removeAttribute('hidden');app.querySelector('#pageswrap').setAttribute('hidden','');
   app.querySelectorAll('.on').forEach(e=>e.classList.remove('on'));app.querySelector('#mEdit').classList.add('on');
   const baked=JSON.stringify({t:Date.now(),state}).replace(/</g,'\\u003c');
   return '<!doctype html>\n<html lang="zh">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<title>R3HAB × 徐明浩 Pitch</title>\n'
