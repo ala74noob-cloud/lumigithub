@@ -728,7 +728,6 @@ async function build() {
   pickRecord.rotation.x = Math.PI / 2;
   recordSpin.add(disc, pickRecord);
   recHeft.obj = record;
-  recordSpin.rotation.z = Math.random() * Math.PI * 2;
   record.visible = false;
   placeRecordInPocket();
 
@@ -925,6 +924,7 @@ async function popRecord() {
   busy = true; refreshUI();
   await settleTurn();
   placeRecordInPocket();
+  recordSpin.rotation.z = 0;   // label upright
   record.visible = true;
   const p0 = pocketPos(), up = abovePocket();
   const curve = path(
@@ -1042,7 +1042,12 @@ async function liftToHand() {
   const curve = new THREE.CubicBezierCurve3(p0, p0.clone().add(V(0, 1.5, 0)), POP_POS.clone().add(V(0, .7, .6)), POP_POS);
   frameFor('popped');
   showDeckLater();
-  await fly(curve, 2.2, k => slerpQ(FACE_UP, ID, ease.sine(smooth(.15, .85, k))));
+  const spin0 = recordSpin.rotation.z, spin1 = Math.round(spin0 / (Math.PI * 2)) * Math.PI * 2;
+  await fly(curve, 2.2, k => {
+    recordSpin.rotation.z = lerp(spin0, spin1, ease.sine(smooth(.1, .9, k)));   // label comes back upright
+    return slerpQ(FACE_UP, ID, ease.sine(smooth(.15, .85, k)));
+  });
+  recordSpin.rotation.z = 0;
   record.quaternion.identity(); recHeft.sync();
   state = 'popped'; busy = false; refreshUI();
 }
