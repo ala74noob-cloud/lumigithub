@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>黑胶唱片 · 3D</title>
+<style>
+:root{
+  --blue:#126698;
+  --bg-1:#1a2a38;
+  --bg-2:#0b1118;
+  --ink:#e9eef2;
+  --dim:rgba(233,238,242,.55);
+}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg-2);}
+body{
+  background:radial-gradient(120% 90% at 50% 30%, var(--bg-1) 0%, var(--bg-2) 70%);
+  color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;}
+canvas#gl.pointer{cursor:pointer;}
+canvas#gl.dragging{cursor:grabbing;}
+/* film grain over everything, matching the photos */
+.grain{position:fixed;inset:-50%;pointer-events:none;opacity:.07;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation:grain 1s steps(6) infinite;}
+@keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(0,0)}}
+.hint{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));text-align:center;
+  font-size:13px;letter-spacing:.18em;color:var(--dim);pointer-events:none;transition:opacity .4s;padding:0 16px;}
+.bar{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 32px);}
+.bar button{
+  appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(18,102,152,.22);
+  color:var(--ink);font:inherit;font-size:13px;letter-spacing:.08em;padding:9px 16px;border-radius:999px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:background .2s,opacity .3s;}
+.bar button:hover{background:rgba(18,102,152,.45);}
+.bar button[hidden]{display:none;}
+.bar button:disabled{opacity:.35;cursor:default;}
+.loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--dim);font-size:13px;letter-spacing:.2em;transition:opacity .6s;pointer-events:none;}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="grain"></div>
+<div class="loading" id="loading">LOADING</div>
+<div class="hint" id="hint">点击封套 · 打开</div>
+<div class="bar">
+  <button id="btnPop" hidden>取出唱片</button>
+  <button id="btnSpin" hidden>暂停转动</button>
+  <button id="btnBack" hidden>放回唱片</button>
+  <button id="btnClose" hidden>合上封套</button>
+  <button id="btnView">复位视角</button>
+</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const IMG = {
+  cover:  '__COVER__',
+  label:  '__LABEL__',
+  spread: '__SPREAD__',
+};
+const BLUE = '#126698';          // sampled from the sky in the cover photo
+
+/* ---------- dimensions (1 unit ≈ 10 cm) ---------- */
+const S = 3.1;        // sleeve square side (12")
+const T = 0.014;      // board thickness
+const G = 0.03;       // pocket gap inside the right panel
+const R = 1.48;       // record radius
+const H = 0.018;      // record thickness
+const HOLE = 0.036;
+const LABEL_R = 0.5;
+
+/* ---------- renderer / scene ---------- */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+camera.position.set(2.2, 1.4, 8.5);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 2.5;
+controls.maxDistance = 18;
+
+scene.add(new THREE.HemisphereLight(0xdfeeff, 0x1a2430, 0.5));
+const key = new THREE.DirectionalLight(0xfff4e6, 1.6);
+key.position.set(4, 6, 7);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -6; key.shadow.camera.right = 6;
+key.shadow.camera.top = 6;   key.shadow.camera.bottom = -6;
+key.shadow.camera.far = 30;
+key.shadow.bias = -0.0004;
+key.shadow.radius = 6;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x8fc4ff, 0.7);
+rim.position.set(-6, 2, -5);
+scene.add(rim);
+
+// soft shadow catcher behind the objects
+const catcher = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.ShadowMaterial({ opacity: 0.28 })
+);
+catcher.position.z = -1.2;
+catcher.receiveShadow = true;
+scene.add(catcher);
+
+const root = new THREE.Group();   // gentle idle float
+scene.add(root);
+
+/* ---------- textures ---------- */
+const loader = new THREE.TextureLoader();
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+function loadTex(src) {
+  return new Promise((res, rej) => loader.load(src, t => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = maxAniso;
+    res(t);
+  }, undefined, rej));
+}
+function loadImg(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+function canvasTex(c, srgb = true) {
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = maxAniso;
+  return t;
+}
+function addGrain(ctx, w, h, amt) {
+  const d = ctx.getImageData(0, 0, w, h);
+  for (let i = 0; i < d.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * amt;
+    d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n;
+  }
+  ctx.putImageData(d, 0, 0);
+}
+
+// back cover: flat sampled blue with paper grain
+function makeBackCover() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = BLUE; g.fillRect(0, 0, 512, 512);
+  const v = g.createRadialGradient(256, 200, 40, 256, 256, 420);
+  v.addColorStop(0, 'rgba(255,255,255,.06)'); v.addColorStop(1, 'rgba(0,0,0,.18)');
+  g.fillStyle = v; g.fillRect(0, 0, 512, 512);
+  addGrain(g, 512, 512, 22);
+  return canvasTex(c);
+}
+
+/* record face: colour map, plus roughness / clearcoat maps so the
+   label reads as matte paper and the grooves as glossy vinyl */
+const DISC_PX = 2048;
+function drawGrooves(g, size, base, lineDark, lineLight) {
+  const c = size / 2, px = c / R;
+  g.fillStyle = base; g.fillRect(0, 0, size, size);
+  const inner = (LABEL_R + 0.06) * px, outer = (R - 0.04) * px;
+  // track gaps (smooth bands between songs)
+  const gaps = [0.18, 0.37, 0.55, 0.74].map(f => inner + (outer - inner) * f);
+  for (let r = inner; r < outer; r += 1.35) {
+    const inGap = gaps.some(gp => Math.abs(r - gp) < 6);
+    g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2);
+    const j = Math.random();
+    g.strokeStyle = inGap ? lineLight : (j < 0.5 ? lineDark : lineLight);
+    g.lineWidth = inGap ? 1.2 : 0.7;
+    g.stroke();
+  }
+  // lead-in / run-out edges
+  g.lineWidth = 2; g.strokeStyle = lineDark;
+  [inner, outer, (R - 0.01) * px].forEach(r => { g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2); g.stroke(); });
+}
+function makeDiscFace(labelImg) {
+  const c = document.createElement('canvas'); c.width = c.height = DISC_PX;
+  const g = c.getContext('2d'), m = DISC_PX / 2, px = m / R;
+  drawGrooves(g, DISC_PX, '#f2f1ee', 'rgba(120,125,130,.16)', 'rgba(255,255,255,.55)');
+  // label
+  g.save();
+  g.beginPath(); g.arc(m, m, LABEL_R * px, 0, Math.PI * 2); g.clip();
+  if (labelImg) {
+    g.drawImage(labelImg, m - LABEL_R * px, m - LABEL_R * px, LABEL_R * 2 * px, LABEL_R * 2 * px);
+  } else {
+    g.fillStyle = BLUE; g.fillRect(0, 0, DISC_PX, DISC_PX);
+    const v = g.createRadialGradient(m, m, 0, m, m, LABEL_R * px);
+    v.addColorStop(0, 'rgba(255,255,255,.08)'); v.addColorStop(1, 'rgba(0,0,0,.15)');
+    g.fillStyle = v; g.fillRect(0, 0, DISC_PX, DISC_PX);
+    addGrain(g, DISC_PX, DISC_PX, 14);
+  }
+  g.restore();
+  // pressed ring around the label
+  g.beginPath(); g.arc(m, m, LABEL_R * px + 2, 0, Math.PI * 2);
+  g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 3; g.stroke();
+  return canvasTex(c);
+}
+function makeDiscMasks() {
+  const sz = 1024, m = sz / 2, px = m / R;
+  // roughness (green channel): grooves low, label high
+  const rc = document.createElement('canvas'); rc.width = rc.height = sz;
+  const rg = rc.getContext('2d');
+  drawGrooves(rg, sz, 'rgb(70,70,70)', 'rgb(120,120,120)', 'rgb(40,40,40)');
+  rg.fillStyle = 'rgb(235,235,235)';
+  rg.beginPath(); rg.arc(m, m, LABEL_R * px, 0, Math.PI * 2); rg.fill();
+  // clearcoat (red channel): only the vinyl
+  const cc = document.createElement('canvas'); cc.width = cc.height = sz;
+  const cg = cc.getContext('2d');
+  cg.fillStyle = '#fff'; cg.fillRect(0, 0, sz, sz);
+  cg.fillStyle = '#000'; cg.beginPath(); cg.arc(m, m, LABEL_R * px, 0, Math.PI * 2); cg.fill();
+  return { rough: canvasTex(rc, false), coat: canvasTex(cc, false) };
+}
+
+/* ---------- build ---------- */
+const sleeve = new THREE.Group();      // shifts right when opened so the spread is centred
+root.add(sleeve);
+let leftHinge, record, recordSpin, pickRecord;
+const pickSleeve = [];
+
+async function build() {
+  const [coverTex, spreadTex, labelImg] = await Promise.all([
+    loadTex(IMG.cover), loadTex(IMG.spread), loadImg(IMG.label),
+  ]);
+  const spreadL = spreadTex;              spreadL.repeat.set(0.5, 1); spreadL.offset.set(0, 0);
+  const spreadR = spreadTex.clone();      spreadR.repeat.set(0.5, 1); spreadR.offset.set(0.5, 0); spreadR.needsUpdate = true;
+
+  const paper = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0 });
+  const edge  = paper('#e7e3db');
+  const edgeB = paper(BLUE);
+  const printed = map => new THREE.MeshStandardMaterial({ map, roughness: 0.62, metalness: 0 });
+  const box = (w, h, d, mats) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
+    m.castShadow = true; m.receiveShadow = true; return m;
+  };
+
+  // right panel: inner board (spread right half) + back board (blue) with a pocket between
+  const right = new THREE.Group();
+  sleeve.add(right);
+  const inner = box(S, S, T, [edge, edge, edge, edge, printed(spreadR), edge]);
+  inner.position.z = -T / 2;
+  const back = box(S, S, T, [edgeB, edgeB, edgeB, edgeB, edgeB, printed(makeBackCover())]);
+  back.position.z = -T - G - T / 2;
+  right.add(inner, back);
+  // pocket walls: spine, outer edge, bottom (top stays open for the record)
+  const wallD = G + 0.001, wz = -T - G / 2;
+  const spine = box(T, S, wallD + 2 * T, edgeB); spine.position.set(-S / 2 - T / 2, 0, wz);
+  const wR = box(0.01, S, wallD, edgeB);         wR.position.set(S / 2 - 0.005, 0, wz);
+  const wB = box(S, 0.01, wallD, edgeB);         wB.position.set(0, -S / 2 + 0.005, wz);
+  right.add(spine, wR, wB);
+
+  // left panel (front cover) hinged at the spine
+  leftHinge = new THREE.Group();
+  leftHinge.position.set(-S / 2, 0, 0);
+  sleeve.add(leftHinge);
+  const front = box(S, S, T, [edge, edge, edge, edge, printed(coverTex), printed(spreadL)]);
+  front.position.set(S / 2, 0, T / 2 + 0.0005);
+  leftHinge.add(front);
+
+  pickSleeve.push(inner, back, front, spine, wR, wB);
+
+  // record
+  record = new THREE.Group();
+  recordSpin = new THREE.Group();
+  record.add(recordSpin);
+  root.add(record);
+  const masks = makeDiscMasks();
+  const vinyl = map => new THREE.MeshPhysicalMaterial({
+    map, color: 0xffffff, roughness: 1, roughnessMap: masks.rough,
+    clearcoat: 1, clearcoatMap: masks.coat, clearcoatRoughness: 0.12,
+    sheen: 0.4, sheenColor: new THREE.Color('#dfe9f2'), sheenRoughness: 0.5,
+  });
+  const faceGeo = new THREE.RingGeometry(HOLE, R, 256, 1);
+  const faceA = new THREE.Mesh(faceGeo, vinyl(makeDiscFace(labelImg)));
+  faceA.position.z = H / 2;
+  const faceB = new THREE.Mesh(faceGeo, vinyl(makeDiscFace(null)));
+  faceB.rotation.y = Math.PI; faceB.position.z = -H / 2;
+  const rimMat = new THREE.MeshPhysicalMaterial({ color: '#f4f3f0', roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.2 });
+  const rimMesh = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 256, 1, true), rimMat);
+  rimMesh.rotation.x = Math.PI / 2;
+  const holeMesh = new THREE.Mesh(new THREE.CylinderGeometry(HOLE, HOLE, H, 32, 1, true),
+    new THREE.MeshStandardMaterial({ color: '#cfcac2', side: THREE.BackSide }));
+  holeMesh.rotation.x = Math.PI / 2;
+  [faceA, faceB, rimMesh].forEach(m => { m.castShadow = true; m.receiveShadow = true; });
+  // invisible solid disc so grabbing the centre hole still counts as grabbing the record
+  pickRecord = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64), new THREE.MeshBasicMaterial({ visible: false }));
+  pickRecord.rotation.x = Math.PI / 2;
+  recordSpin.add(faceA, faceB, rimMesh, holeMesh, pickRecord);
+  recordSpin.rotation.z = Math.random() * Math.PI * 2;
+  record.visible = false;
+  placeRecordInPocket();
+
+  frameFor('closed', true);
+}
+
+/* ---------- state ---------- */
+let state = 'closed';   // closed | open | popped
+let busy = false;
+let spinning = true;
+let spinVel = 0.55;      // rad/s, slow showroom spin
+const ui = {
+  hint: document.getElementById('hint'),
+  pop: document.getElementById('btnPop'),
+  spin: document.getElementById('btnSpin'),
+  back: document.getElementById('btnBack'),
+  close: document.getElementById('btnClose'),
+  view: document.getElementById('btnView'),
+};
+function refreshUI() {
+  ui.pop.hidden = state !== 'open';
+  ui.back.hidden = state !== 'popped';
+  ui.spin.hidden = state !== 'popped';
+  ui.close.hidden = state === 'closed';
+  ui.spin.textContent = spinning ? '暂停转动' : '继续转动';
+  [ui.pop, ui.back, ui.close, ui.spin].forEach(b => b.disabled = busy);
+  ui.hint.textContent = {
+    closed: '点击封套 · 打开',
+    open: '点击封套 · 取出唱片',
+    popped: '拖动唱片 · 360° 旋转检视　拖动空白处 · 环绕视角',
+  }[state];
+  ui.hint.style.opacity = busy ? 0 : 1;
+}
+
+/* ---------- tweening ---------- */
+const tweens = new Set();
+const ease = {
+  inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  out: t => 1 - Math.pow(1 - t, 3),
+  outBack: t => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+function tween(dur, fn, e = ease.inOut) {
+  return new Promise(res => tweens.add({ t0: performance.now(), dur: dur * 1000, fn, e, res }));
+}
+function stepTweens(now) {
+  for (const tw of tweens) {
+    const k = Math.min(1, (now - tw.t0) / tw.dur);
+    tw.fn(tw.e(k));
+    if (k >= 1) { tweens.delete(tw); tw.res(); }
+  }
+}
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---------- camera framing ---------- */
+const POP_POS = new THREE.Vector3(0, 0.15, 1.5);
+function fitDistance(w, h) {
+  const vf = THREE.MathUtils.degToRad(camera.fov);
+  const dh = (h / 2) / Math.tan(vf / 2);
+  const dw = (w / 2) / (Math.tan(vf / 2) * camera.aspect);
+  return Math.max(dh, dw) * 1.18;
+}
+function frameFor(which, instant = false) {
+  let target, dist, dir;
+  if (which === 'closed') { target = new THREE.Vector3(0, 0, 0); dist = fitDistance(S, S) * 1.25; dir = new THREE.Vector3(0.28, 0.16, 1); }
+  else if (which === 'open') { target = new THREE.Vector3(0, 0, 0); dist = fitDistance(2 * S, S); dir = new THREE.Vector3(0.12, 0.1, 1); }
+  else { target = POP_POS.clone(); dist = fitDistance(2 * R, 2 * R) * 1.25; dir = new THREE.Vector3(0.18, 0.12, 1); }
+  const to = target.clone().add(dir.normalize().multiplyScalar(dist));
+  if (instant) { controls.target.copy(target); camera.position.copy(to); controls.update(); return Promise.resolve(); }
+  const p0 = camera.position.clone(), t0 = controls.target.clone();
+  return tween(1.3, k => { camera.position.lerpVectors(p0, to, k); controls.target.lerpVectors(t0, target, k); });
+}
+
+/* ---------- record placement helpers ---------- */
+function pocketPos() { return new THREE.Vector3(sleeve.position.x, 0, -T - G / 2); }
+function placeRecordInPocket() {
+  record.position.copy(pocketPos());
+  record.quaternion.identity();
+}
+
+/* ---------- actions ---------- */
+async function openSleeve() {
+  busy = true; refreshUI();
+  const x0 = sleeve.position.x;
+  frameFor('open');
+  await tween(1.6, k => {
+    leftHinge.rotation.y = lerp(0, -Math.PI, k);
+    sleeve.position.x = lerp(x0, S / 2, k);
+  });
+  state = 'open'; busy = false; refreshUI();
+}
+async function closeSleeve() {
+  if (state === 'popped') await putBack();
+  busy = true; refreshUI();
+  frameFor('closed');
+  await tween(1.5, k => {
+    leftHinge.rotation.y = lerp(-Math.PI, 0, k);
+    sleeve.position.x = lerp(S / 2, 0, k);
+  });
+  record.visible = false;
+  state = 'closed'; busy = false; refreshUI();
+}
+async function popRecord() {
+  busy = true; refreshUI();
+  placeRecordInPocket();
+  record.visible = true;
+  const p0 = pocketPos();
+  const up = p0.clone(); up.y = S / 2 + R + 0.12;
+  // slide out of the open top of the pocket
+  await tween(1.1, k => record.position.lerpVectors(p0, up, k), ease.inOut);
+  frameFor('popped');
+  // arc forward to the viewer with a full flip so both sides flash by
+  const q0 = record.quaternion.clone();
+  await tween(1.4, k => {
+    record.position.lerpVectors(up, POP_POS, k);
+    record.position.z += Math.sin(k * Math.PI) * 0.8;
+    record.quaternion.copy(q0).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), k * Math.PI * 2));
+  }, ease.inOut);
+  record.quaternion.identity();
+  state = 'popped'; busy = false; refreshUI();
+}
+async function putBack() {
+  busy = true; refreshUI();
+  angVel.set(0, 0, 0);
+  const p0 = record.position.clone(), q0 = record.quaternion.clone();
+  const up = pocketPos(); up.y = S / 2 + R + 0.12;
+  frameFor('open');
+  await tween(1.2, k => {
+    record.position.lerpVectors(p0, up, k);
+    record.quaternion.slerpQuaternions(q0, new THREE.Quaternion(), k);
+  });
+  const dn = pocketPos();
+  await tween(0.9, k => record.position.lerpVectors(up, dn, k));
+  state = 'open'; busy = false; refreshUI();
+}
+
+/* ---------- pointer: click to open / pop, drag record to rotate ---------- */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let down = null;
+let dragRecord = false;
+const angVel = new THREE.Vector3();   // inertia for the record (camera-space axis * speed)
+let lastMove = 0;
+
+function setNdc(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function hitRecord() { return record && record.visible && ray.intersectObject(pickRecord, false).length > 0; }
+function hitSleeve() { return ray.intersectObjects(pickSleeve, false).length > 0; }
+
+function rotateRecord(dx, dy) {
+  // map screen drag to a rotation about camera-space axes → full 360° in any direction
+  const speed = 0.009;
+  const axisCam = new THREE.Vector3(dy, dx, 0);
+  const ang = axisCam.length() * speed;
+  if (ang < 1e-6) return;
+  axisCam.normalize();
+  const axisWorld = axisCam.clone().applyQuaternion(camera.quaternion);
+  record.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axisWorld, ang));
+}
+
+canvas.addEventListener('pointerdown', e => {
+  setNdc(e);
+  down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false };
+  if (state === 'popped' && !busy && hitRecord()) {
+    dragRecord = true;
+    controls.enabled = false;
+    angVel.set(0, 0, 0);
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add('dragging');
+  }
+}, { capture: true });   // run before OrbitControls so it never starts orbiting on a record grab
+canvas.addEventListener('pointermove', e => {
+  if (down) {
+    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) down.moved = true;
+    if (dragRecord) {
+      const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
+      rotateRecord(dx, dy);
+      const now = performance.now(), dt = Math.max(1, now - lastMove);
+      angVel.set(dx / dt * 16, dy / dt * 16, 0);
+      lastMove = now;
+    }
+    down.lx = e.clientX; down.ly = e.clientY;
+    return;
+  }
+  // hover cursor
+  setNdc(e);
+  const clickable = !busy && ((state !== 'popped' && hitSleeve()) || (state === 'popped' && hitRecord()));
+  canvas.classList.toggle('pointer', clickable && state !== 'popped');
+});
+function endPointer(e) {
+  if (!down) return;
+  const wasClick = !down.moved;
+  if (dragRecord) {
+    dragRecord = false;
+    controls.enabled = true;
+    canvas.classList.remove('dragging');
+    if (performance.now() - lastMove > 80) angVel.set(0, 0, 0);
+  }
+  down = null;
+  if (wasClick && !busy && e.type === 'pointerup') {
+    setNdc(e);
+    if (state === 'closed' && hitSleeve()) openSleeve().then(popRecord);
+    else if (state === 'open' && hitSleeve()) popRecord();
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+ui.pop.onclick = () => !busy && state === 'open' && popRecord();
+ui.back.onclick = () => !busy && state === 'popped' && putBack();
+ui.close.onclick = () => !busy && state !== 'closed' && closeSleeve();
+ui.spin.onclick = () => { spinning = !spinning; refreshUI(); };
+ui.view.onclick = () => {
+  if (state === 'popped' && !busy) {
+    const q0 = record.quaternion.clone(); angVel.set(0, 0, 0);
+    tween(0.8, k => record.quaternion.slerpQuaternions(q0, new THREE.Quaternion(), k));
+  }
+  frameFor(state);
+};
+
+/* ---------- loop ---------- */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+const clock = new THREE.Clock();
+let curSpin = 0;
+function loop(now) {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  stepTweens(now);
+  root.position.y = Math.sin(t * 0.9) * 0.035;
+  root.rotation.z = Math.sin(t * 0.6) * 0.004;
+  if (record) {
+    const want = state === 'popped' && spinning ? spinVel : 0;
+    curSpin = lerp(curSpin, want, 1 - Math.exp(-dt * 3));
+    recordSpin.rotation.z -= curSpin * dt;
+    if (!dragRecord && angVel.lengthSq() > 1e-4) {
+      rotateRecord(angVel.x, angVel.y);
+      angVel.multiplyScalar(Math.exp(-dt * 3.2));
+    }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+build().then(() => {
+  refreshUI();
+  const l = document.getElementById('loading'); l.style.opacity = 0;
+  requestAnimationFrame(loop);
+}).catch(err => {
+  document.getElementById('loading').textContent = '加载失败：' + err;
+  console.error(err);
+});
+refreshUI();
+</script>
+</body>
+</html>
