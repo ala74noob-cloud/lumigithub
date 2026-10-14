@@ -82,8 +82,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--solid);outline-
 .np input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--solid);}
 .np input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--solid);margin-top:-4px;box-shadow:0 1px 4px rgba(0,0,0,.4);}
 .np input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--solid);}
-.np-ctl{display:flex;gap:6px;}
-.round{appearance:none;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+.np-ctl{display:flex;gap:6px;align-items:center;}
+.round{appearance:none;border:0;width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;
   background:var(--glass-hi);color:var(--ink);transition:transform .15s,opacity .2s;}
 .round.solid{background:var(--solid);color:var(--on-solid);}
 .round:active{transform:scale(.92);}
@@ -92,6 +92,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--solid);outline-
 
 .loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--ink-2);font:500 13px var(--sf);letter-spacing:.04em;transition:opacity .6s;pointer-events:none;}
 @media (max-width:520px){
+  .np{grid-template-columns:44px minmax(0,1fr) auto;gap:10px;}
+  .np img{width:44px;height:44px;}
+  .round{width:34px;height:34px;}
   .toolbar button{padding:10px 12px;font-size:13px;}
   .toolbar button .lbl-long{display:none;}
 }
@@ -108,19 +111,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--solid);outline-
     <img id="npArt" alt="Album cover">
     <div class="np-meta">
       <div class="np-title" id="npTitle">MIX BEAT 3</div>
-      <div class="np-sub">Side A · 33⅓ RPM</div>
+      <div class="np-sub" id="npSub">Side A · 33⅓ RPM</div>
       <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Playback position">
       <div class="np-time"><span id="tCur">0:00</span><span id="tRem">-0:00</span></div>
     </div>
     <div class="np-ctl">
+      <button class="round" id="npPrev" aria-label="Previous track"><svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM19 5v14L9 12z"/></svg></button>
       <button class="round solid" id="npToggle" aria-label="Pause"><svg viewBox="0 0 24 24"><path id="npIcon" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
-      <button class="round" id="npLift" aria-label="Lift the record"><svg viewBox="0 0 24 24"><path d="M12 4.5l7.5 8.5h-15zM4.5 16h15v3h-15z"/></svg></button>
+      <button class="round" id="npNext" aria-label="Next track"><svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM5 5v14l10-7z"/></svg></button>
     </div>
   </section>
   <nav class="toolbar glass" aria-label="Controls">
     <button id="btnPlay" class="primary"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>Play</button>
     <button id="btnPop" hidden>Take Out<span class="lbl-long">Record</span></button>
-    <button id="btnSpin" hidden>Pause Spin</button>
+    <button id="btnLift" hidden><svg viewBox="0 0 24 24"><path d="M12 4.5l7.5 8.5h-15zM4.5 16h15v3h-15z"/></svg>Lift</button>
     <button id="btnBack" hidden>Put Back</button>
     <button id="btnClose" hidden>Close<span class="lbl-long">Sleeve</span></button>
     <button id="btnView">Reset<span class="lbl-long">View</span></button>
@@ -144,19 +148,27 @@ const IMG = {
   label:  '__LABEL__',
   spread: '__SPREAD__',
 };
-const TRACK = 'track.mp3';
+// Side A, outermost groove first
+const PLAYLIST = [
+  { title: '时间有什么好追的', src: 'tracks/01.mp3', dur: 260.3 },
+  { title: 'Track 2', src: 'tracks/02.mp3', dur: 237.7 },
+  { title: 'Track 3', src: 'tracks/03.mp3', dur: 262.9 },
+  { title: '我想念海，她依旧是我的夏天 II', src: 'tracks/04.mp3', dur: 231.0 },
+  { title: 'Track 5', src: 'tracks/05.mp3', dur: 264.8 },
+];
 const BLUE = '#126698';          // sampled from the sky in the cover photo
 
 /* ---------- dimensions (1 unit ≈ 10 cm) ---------- */
 const S = 3.1;        // sleeve square side (12")
-const T = 0.014;      // board thickness
-const G = 0.03;       // pocket gap inside the right panel
+const T = 0.02;       // board thickness (heavy 2 mm board)
+const G = 0.034;      // pocket gap inside the right panel
 const R = 1.48;       // record radius
 // record proportions measured from the supplied 12" model (300 mm disc):
 // label Ø98 mm, spindle hole Ø7.4 mm
 const LABEL_R = R * 0.049 / 0.15;
+const REC_LAND = 0.0095;   // half-thickness at the label
 const HOLE = R * 0.0037 / 0.15;
-const H = 0.0144;     // thickest point (edge bead), ≈1.45 mm
+const H = 0.022;      // thickest point (edge bead), ≈2.2 mm — a 180 g pressing
 
 /* ---------- renderer / scene ---------- */
 const canvas = document.getElementById('gl');
@@ -170,7 +182,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 {
-  // backdrop lives in the scene (not CSS) so the clear plastic can refract it
+  // backdrop drawn in the scene so reflections and the page background agree
   const c = document.createElement('canvas'); c.width = c.height = 512;
   const g = c.getContext('2d');
   const css = getComputedStyle(document.documentElement);
@@ -352,26 +364,6 @@ function printFace({ img, sx = 0, sy = 0, sw, sh, color, ring = 0, size = 1024 }
   return canvasTex(c);
 }
 
-// polythene outer sleeve: long stretch streaks and a few soft creases
-function makeCrinkleNormal(size = 512) {
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const g = c.getContext('2d');
-  g.fillStyle = '#808080'; g.fillRect(0, 0, size, size);
-  g.lineCap = 'round';
-  for (let i = 0; i < 90; i++) {
-    const x = Math.random() * size, y = Math.random() * size;
-    const a = Math.PI / 2 + (Math.random() - .5) * .9, len = 60 + Math.random() * 260;
-    const v = Math.random() < .5 ? 0 : 255;
-    for (let w = 7; w >= 1; w -= 2) {
-      g.strokeStyle = `rgba(${v},${v},${v},${.035 + Math.random() * .03})`; g.lineWidth = w;
-      g.beginPath(); g.moveTo(x, y);
-      g.quadraticCurveTo(x + Math.cos(a) * len / 2 + (Math.random() - .5) * 30, y + Math.sin(a) * len / 2,
-                         x + Math.cos(a) * len, y + Math.sin(a) * len);
-      g.stroke();
-    }
-  }
-  return canvasTex(heightToNormal(readHeight(g, size, .01), size, 3.0, false), false);
-}
 
 /* ---------- the record ----------
    A lathe-turned profile (thicker label land, thinner groove field, raised edge
@@ -401,7 +393,20 @@ const fbm = (n, x, y, o = 4) => { let f = 0, a = .5; for (let i = 0; i < o; i++)
 const RUNOUT0 = LABEL_R + 0.04;            // end of the label step
 const GROOVE0 = LABEL_R + 0.1;             // last groove (run-out area lies inside it)
 const GROOVE1 = R - 0.06;                  // first groove (lead-in lies outside it)
-const TRACKS = [0, .21, .4, .62, .81, 1];  // five tracks, gaps between them
+// band boundaries (0 = innermost groove, 1 = outermost), sized by each song's length
+const TRACKS = (() => {
+  const total = PLAYLIST.reduce((a, t) => a + t.dur, 0);
+  let acc = 0; const b = [1];
+  for (const t of PLAYLIST) { acc += t.dur; b.push(Math.max(0, 1 - acc / total)); }
+  return b.reverse();
+})();
+// radius under the stylus at progress p (0..1) through track i
+function grooveRadius(i, p) {
+  const n = PLAYLIST.length, lo = TRACKS[n - 1 - i], hi = TRACKS[n - i];
+  const inset = GAP_W / (GROOVE1 - GROOVE0);
+  const f = (hi - inset) - p * ((hi - inset) - (lo + inset));
+  return GROOVE0 + f * (GROOVE1 - GROOVE0);
+}
 const GAP_W = 0.013;
 const loud = valueNoise(11);
 function grooveCalc(r) {
@@ -493,7 +498,7 @@ function makeRecordMaps(labelImg) {
 
 function recordGeometry() {
   // half-thickness along the radius
-  const LAND = 0.0068, FIELD = 0.0054, BEAD = H / 2;
+  const LAND = REC_LAND, FIELD = 0.0082, BEAD = H / 2;
   const half = r => {
     if (r < LABEL_R + 0.012) return LAND;
     if (r < RUNOUT0) return LAND + (FIELD - LAND) * smooth(LABEL_R + 0.012, RUNOUT0, r);
@@ -531,7 +536,7 @@ const DECK_Y = -2.05, DECK_Z = 2.55;
 const PLATTER_C = new THREE.Vector3(-0.55, 0, 0.05);   // deck-local
 const PIVOT = new THREE.Vector3(1.68, 0, -1.2);         // tonearm pivot, deck-local
 const ARM_L = 2.36;                                     // pivot → stylus
-const SEAT_Y = 0.175 + 0.0068;                          // record centre height on the mat
+const SEAT_Y = 0.175 + REC_LAND;                        // record centre height on the mat
 let deck, platter, armYaw, armLift;
 function buildDeck() {
   deck = new THREE.Group();
@@ -644,8 +649,7 @@ function boardGeo(d, { front = 0, back = 0 } = {}) {
   return geo;
 }
 
-let spine, plastic;
-const plasticMats = [];
+let spine;
 async function build() {
   const [coverImg, spreadImg, labelImg] = await Promise.all([
     loadImg(IMG.cover), loadImg(IMG.spread), loadImg(IMG.label),
@@ -697,7 +701,6 @@ async function build() {
   leftHinge.add(front);
 
   pickSleeve.push(inner, back, front, spine, wR, wB);
-  buildPlastic();
 
   // record: milky white resin, the green photo on both labels
   record = new THREE.Group();
@@ -718,6 +721,7 @@ async function build() {
   pickRecord = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64), new THREE.MeshBasicMaterial({ visible: false }));
   pickRecord.rotation.x = Math.PI / 2;
   recordSpin.add(disc, pickRecord);
+  recHeft.obj = record;
   recordSpin.rotation.z = Math.random() * Math.PI * 2;
   record.visible = false;
   placeRecordInPocket();
@@ -726,72 +730,6 @@ async function build() {
   frameFor('closed', true);
 }
 
-/* clear polythene outer sleeve: a little wider and taller than the jacket,
-   open at the top with a loose flared lip, creased and stretched */
-function buildPlastic() {
-  plastic = new THREE.Group();
-  sleeve.add(plastic);
-  const PW = S / 2 + 0.035, PB = -S / 2 - 0.03, PT = S / 2 + 0.17;
-  const zF = T + 0.0005 + 0.006, zB = -2 * T - G - 0.006;
-  const clampX = x => Math.max(-S / 2, Math.min(S / 2, x)), clampY = y => Math.max(-S / 2, Math.min(S / 2, y));
-  const base = (x, y) => curl(clampX(x), clampY(y));
-  // fixed creases so the sleeve looks the same every visit
-  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const creases = Array.from({ length: 9 }, () => {
-    const a = Math.PI / 2 + (rnd() - .5) * 1.4;
-    return { nx: Math.cos(a), ny: Math.sin(a), c: (rnd() - .5) * S, amp: .002 + rnd() * .005, w: .03 + rnd() * .12 };
-  });
-  const wrinkle = (x, y) => {
-    let v = 0;
-    for (const k of creases) { const d = x * k.ny - y * k.nx - k.c; v += k.amp * Math.exp(-((d / k.w) ** 2)); }
-    v += .0015 * (1 + Math.sin(x * 3.1 + y * 1.7)) * (1 + Math.sin(y * 2.3 - x * .9));
-    return v * smooth(0, .15, PW - Math.abs(x)) * smooth(0, .15, y - PB);
-  };
-  const lip = y => .03 * smooth(S / 2 - .02, PT, y) ** 2;
-
-  const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0, roughness: 0.035,
-    transmission: 1, thickness: 0.004, ior: 1.5,
-    normalMap: makeCrinkleNormal(), normalScale: new THREE.Vector2(0.6, 0.6),
-    specularIntensity: 0.8,
-    transparent: true, opacity: 1, side: THREE.DoubleSide, depthWrite: false,
-    envMapIntensity: 0.9,
-  });
-  plasticMats.push(mat);
-
-  const sheet = (sign) => {
-    const geo = new THREE.PlaneGeometry(2 * PW, PT - PB, 96, 96);
-    geo.translate(0, (PT + PB) / 2, 0);
-    const p = geo.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), y = p.getY(i);
-      const bulge = sign > 0 ? FRONT_BULGE * pillow(x, y) : -BACK_BULGE * pillow(x, y);
-      p.setZ(i, (sign > 0 ? zF : zB) + base(x, y) + bulge + sign * (wrinkle(x, y) + lip(y)));
-    }
-    geo.computeVertexNormals();
-    return new THREE.Mesh(geo, mat);
-  };
-  // side and bottom folds: half tubes joining front and back sheets
-  const rad = (zF - zB) / 2, zc = (zF + zB) / 2;
-  const tube = (len, thetaStart) => new THREE.CylinderGeometry(rad, rad, len, 16, 48, true, thetaStart, Math.PI);
-  const bend = (geo, f) => { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) f(p, i); geo.computeVertexNormals(); return geo; };
-  const sideGeo = (sx) => bend(tube(PT - PB - 0.002, sx > 0 ? 0 : Math.PI), (p, i) => {
-    const y = p.getY(i) + (PT + PB) / 2;
-    p.setY(i, y); p.setX(i, p.getX(i) + sx * PW); p.setZ(i, p.getZ(i) + zc + base(sx * PW, y));
-  });
-  const botGeo = bend(tube(2 * PW, Math.PI), (p, i) => {
-    // cylinder axis is y; lay it along x with the rounded half facing down
-    const ax = p.getY(i), ox = p.getX(i), oz = p.getZ(i);
-    p.setXYZ(i, ax, PB + ox, oz + zc + base(ax, PB));
-  });
-  plastic.add(sheet(1), sheet(-1), new THREE.Mesh(sideGeo(1), mat), new THREE.Mesh(sideGeo(-1), mat), new THREE.Mesh(botGeo, mat));
-  plastic.traverse(o => { if (o.isMesh) { o.renderOrder = 2; pickSleeve.push(o); } });
-}
-function setPlastic(k) {   // 0 = on the jacket, 1 = slid off and gone
-  plastic.position.y = -k * (S * 2.2);
-  plasticMats.forEach(m => { m.opacity = 1 - smooth(.35, 1, k); });
-  plastic.visible = k < 1;
-}
 
 /* ---------- tweening ---------- */
 const tweens = new Set();
@@ -858,23 +796,25 @@ const slerpQ = (a, b, t) => new THREE.Quaternion().slerpQuaternions(a, b, Math.m
 /* ---------- state ---------- */
 let state = 'closed';   // closed | open | popped | deck
 let busy = false;
-let spinning = true;
-const SHOW_SPIN = 0.55;              // rad/s while you inspect it
 const RPM33 = 33.333 * Math.PI / 30; // rad/s on the platter
 let deckSpin = false;                // platter motor on
 let armDown = false;
+let trackIx = 0;
 const ui = {
   hint: document.getElementById('hint'),
   play: document.getElementById('btnPlay'),
   pop: document.getElementById('btnPop'),
-  spin: document.getElementById('btnSpin'),
+  lift: document.getElementById('btnLift'),
   back: document.getElementById('btnBack'),
   close: document.getElementById('btnClose'),
   view: document.getElementById('btnView'),
   np: document.getElementById('np'),
   npToggle: document.getElementById('npToggle'),
   npIcon: document.getElementById('npIcon'),
-  npLift: document.getElementById('npLift'),
+  npPrev: document.getElementById('npPrev'),
+  npNext: document.getElementById('npNext'),
+  npTitle: document.getElementById('npTitle'),
+  npSub: document.getElementById('npSub'),
   seek: document.getElementById('seek'),
   tCur: document.getElementById('tCur'),
   tRem: document.getElementById('tRem'),
@@ -884,17 +824,20 @@ function refreshUI() {
   ui.play.hidden = state === 'deck';
   ui.pop.hidden = state !== 'open';
   ui.back.hidden = state !== 'popped' && state !== 'deck';
-  ui.spin.hidden = state !== 'popped';
+  ui.lift.hidden = state !== 'deck';
   ui.close.hidden = state === 'closed';
   ui.np.hidden = state !== 'deck';
-  ui.spin.textContent = spinning ? 'Pause Spin' : 'Spin';
-  [ui.play, ui.pop, ui.back, ui.close, ui.spin, ui.npToggle, ui.npLift].forEach(b => b.disabled = busy);
+  [ui.play, ui.pop, ui.back, ui.close, ui.lift, ui.npToggle, ui.npPrev, ui.npNext].forEach(b => b.disabled = busy);
+  ui.npPrev.disabled ||= trackIx === 0;
+  ui.npNext.disabled ||= trackIx === PLAYLIST.length - 1;
+  ui.npTitle.textContent = PLAYLIST[trackIx].title;
+  ui.npSub.textContent = `Side A · ${trackIx + 1} of ${PLAYLIST.length} · 33⅓ RPM`;
   const playingNow = state === 'deck' && !audio.paused;
   ui.npIcon.setAttribute('d', playingNow ? ICON_PAUSE : ICON_PLAY);
   ui.npToggle.setAttribute('aria-label', playingNow ? 'Pause' : 'Play');
   ui.hint.textContent = busy ? ' ' : {
-    closed: 'Tap the sleeve to unwrap it',
-    open: 'Tap the sleeve to take the record out',
+    closed: 'Tap the sleeve to open it · drag to turn it',
+    open: 'Tap the sleeve to take the record out · drag to turn it',
     popped: 'Drag the record to turn it · drag elsewhere to orbit',
     deck: playingNow ? 'Now playing · drag to orbit' : 'Paused',
   }[state];
@@ -904,13 +847,19 @@ function refreshUI() {
 /* ---------- audio ---------- */
 const audio = new Audio();
 audio.preload = 'auto';
-audio.src = TRACK;
-let triedBlob = false;
+const blobTried = new Set();
+function loadTrack(i) {
+  trackIx = i;
+  audio.src = PLAYLIST[i].src;
+  refreshUI();
+}
 audio.addEventListener('error', async () => {
   // some hosts refuse direct media requests but allow fetch; retry through a blob
-  if (triedBlob) return; triedBlob = true;
-  try { const b = await (await fetch(TRACK)).blob(); audio.src = URL.createObjectURL(b); } catch (e) { console.warn(e); }
+  const t = PLAYLIST[trackIx];
+  if (blobTried.has(t.src)) return; blobTried.add(t.src);
+  try { const b = await (await fetch(t.src)).blob(); audio.src = URL.createObjectURL(b); } catch (e) { console.warn(e); }
 });
+loadTrack(0);
 function unlockAudio() {
   // iOS only lets a page start sound inside a tap; prime the element now, play it later
   if (audio.dataset.unlocked) return;
@@ -923,7 +872,11 @@ function unlockAudio() {
 const fmt = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 audio.addEventListener('play', refreshUI);
 audio.addEventListener('pause', refreshUI);
-audio.addEventListener('ended', () => { if (state === 'deck' && !busy) stopNeedle(true); });
+audio.addEventListener('ended', () => {
+  if (state !== 'deck' || busy) return;
+  if (trackIx < PLAYLIST.length - 1) changeTrack(trackIx + 1);   // the stylus runs on into the next band
+  else stopNeedle(true);
+});
 ui.seek.addEventListener('input', () => {
   if (audio.duration) audio.currentTime = ui.seek.value / 1000 * audio.duration;
 });
@@ -936,8 +889,8 @@ function setSpine(k) {
 }
 async function openSleeve() {
   busy = true; refreshUI();
+  await settleTurn();
   const x0 = sleeve.position.x;
-  await tween(1.0, k => setPlastic(k), ease.inOut);
   frameFor('open');
   await tween(1.6, k => {
     leftHinge.rotation.y = lerp(0, -Math.PI, k);
@@ -950,6 +903,7 @@ async function closeSleeve() {
   if (state === 'deck') await liftToHand();
   if (state === 'popped') await putBack();
   busy = true; refreshUI();
+  await settleTurn();
   frameFor('closed');
   await tween(1.5, k => {
     leftHinge.rotation.y = lerp(-Math.PI, 0, k);
@@ -957,11 +911,11 @@ async function closeSleeve() {
     setSpine(1 - k);
   });
   record.visible = false;
-  await tween(1.0, k => setPlastic(1 - k), ease.inOut);
   state = 'closed'; busy = false; refreshUI();
 }
 async function popRecord() {
   busy = true; refreshUI();
+  await settleTurn();
   placeRecordInPocket();
   record.visible = true;
   const p0 = pocketPos(), up = abovePocket();
@@ -974,13 +928,13 @@ async function popRecord() {
   setTimeout(() => frameFor('popped'), 500);
   // a full turn once clear of the sleeve so both sides flash by
   await fly(curve, 2.4, k => new THREE.Quaternion().setFromAxisAngle(yAxis, ease.sine(smooth(out, 1, k)) * Math.PI * 2));
-  record.quaternion.identity();
+  record.quaternion.identity(); recHeft.sync();
   state = 'popped'; busy = false; refreshUI();
 }
 async function putBack() {
   if (state === 'deck') await liftToHand();
   busy = true; refreshUI();
-  angVel.set(0, 0, 0);
+  recHeft.vel.set(0, 0);
   const p0 = record.position.clone(), q0 = record.quaternion.clone();
   const up = abovePocket(), dn = pocketPos();
   const curve = path(
@@ -1005,7 +959,7 @@ async function showDeck(on) {
 async function toDeck() {
   // from inspecting (popped) onto the platter
   busy = true; refreshUI();
-  angVel.set(0, 0, 0);
+  recHeft.vel.set(0, 0);
   showDeck(true);
   frameFor('deck');
   const p0 = record.position.clone(), q0 = record.quaternion.clone(), seat = deckWorldSeat();
@@ -1018,7 +972,7 @@ async function toDeck() {
   busy = false; refreshUI();
 }
 async function dropNeedle() {
-  const target = armAngleFor(GROOVE1 + .02);
+  const target = armAngleFor(grooveRadius(trackIx, audio.duration ? audio.currentTime / audio.duration : 0));
   const yaw0 = armYaw.rotation.y;
   await tween(1.1, k => setArm(lerp(yaw0, target, k), ARM_UP));
   await tween(.6, k => setArm(target, lerp(ARM_UP, 0, k)), ease.sine);
@@ -1035,8 +989,26 @@ async function stopNeedle(finished) {
   await tween(.45, k => setArm(yaw0, lerp(0, ARM_UP, k)), ease.sine);
   await tween(1.0, k => setArm(lerp(yaw0, 0, k), ARM_UP));
   deckSpin = false;
-  if (finished) audio.currentTime = 0;
+  if (finished) loadTrack(0);
   refreshUI();
+}
+async function changeTrack(i) {
+  if (i < 0 || i >= PLAYLIST.length || i === trackIx && !audio.ended) return;
+  const wasPlaying = !audio.paused || audio.ended;
+  busy = true; refreshUI();
+  audio.pause();
+  loadTrack(i);
+  if (armDown) {
+    // lift, cross to the new band, set down again
+    const yaw0 = armYaw.rotation.y, yaw1 = armAngleFor(grooveRadius(i, 0));
+    armDown = false;
+    await tween(.3, k => setArm(yaw0, lerp(0, ARM_UP, k)), ease.sine);
+    await tween(.7, k => setArm(lerp(yaw0, yaw1, k), ARM_UP));
+    await tween(.4, k => setArm(yaw1, lerp(ARM_UP, 0, k)), ease.sine);
+    armDown = true;
+  }
+  if (wasPlaying) { deckSpin = true; try { await audio.play(); } catch (e) {} }
+  busy = false; refreshUI();
 }
 async function togglePlay() {
   if (busy || state !== 'deck') return;
@@ -1063,7 +1035,7 @@ async function liftToHand() {
   frameFor('popped');
   showDeckLater();
   await fly(curve, 2.2, k => slerpQ(FACE_UP, ID, ease.sine(smooth(.15, .85, k))));
-  record.quaternion.identity();
+  record.quaternion.identity(); recHeft.sync();
   state = 'popped'; busy = false; refreshUI();
 }
 function showDeckLater() { setTimeout(() => showDeck(false), 900); }
@@ -1075,12 +1047,43 @@ async function play() {
   if (state === 'popped') await toDeck();
 }
 
-/* ---------- pointer: click to open / pop, drag record to rotate ---------- */
+/* ---------- hand rotation with weight ----------
+   A drag steers a target orientation; the object follows it through damping, so it
+   lags a little, settles, and carries momentum like a heavy record or a stiff board. */
+const turn = new THREE.Group();            // lets you turn the whole sleeve (and the record in it)
+scene.remove(root); turn.add(root); scene.add(turn);
+class Heft {
+  constructor(obj) { this.obj = obj; this.target = new THREE.Quaternion(); this.vel = new THREE.Vector2(); }
+  sync() { this.target.copy(this.obj.quaternion); this.vel.set(0, 0); }
+  push(dx, dy) {
+    const axis = new THREE.Vector3(dy, dx, 0), ang = axis.length() * 0.0055;
+    if (ang < 1e-7) return;
+    axis.normalize().applyQuaternion(camera.quaternion);
+    this.target.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, ang));
+  }
+  step(dt, held) {
+    if (!held && this.vel.lengthSq() > 1e-3) {
+      this.push(this.vel.x * dt * 60, this.vel.y * dt * 60);
+      this.vel.multiplyScalar(Math.exp(-dt * 4.5));
+    }
+    this.obj.quaternion.slerp(this.target, 1 - Math.exp(-dt * 6.5));
+  }
+}
+const recHeft = new Heft(null), turnHeft = new Heft(turn);
+// square the sleeve up before anything moves in or out of it
+async function settleTurn() {
+  turnHeft.vel.set(0, 0);
+  if (turn.quaternion.angleTo(ID) < 1e-3) { turn.quaternion.identity(); turnHeft.sync(); return; }
+  const q0 = turn.quaternion.clone();
+  await tween(.7, k => turn.quaternion.slerpQuaternions(q0, ID, k));
+  turn.quaternion.identity(); turnHeft.sync();
+}
+
+/* ---------- pointer: click to open / pop, drag to turn things over ---------- */
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 let down = null;
-let dragRecord = false;
-const angVel = new THREE.Vector3();   // inertia for the record (camera-space axis * speed)
+let dragging = null;   // the Heft being turned by hand
 let lastMove = 0;
 
 function setNdc(e) {
@@ -1091,36 +1094,28 @@ function setNdc(e) {
 function hitRecord() { return record && record.visible && ray.intersectObject(pickRecord, false).length > 0; }
 function hitSleeve() { return ray.intersectObjects(pickSleeve, false).length > 0; }
 
-function rotateRecord(dx, dy) {
-  // map screen drag to a rotation about camera-space axes → full 360° in any direction
-  const speed = 0.009;
-  const axisCam = new THREE.Vector3(dy, dx, 0);
-  const ang = axisCam.length() * speed;
-  if (ang < 1e-6) return;
-  axisCam.normalize();
-  const axisWorld = axisCam.clone().applyQuaternion(camera.quaternion);
-  record.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axisWorld, ang));
-}
 
 canvas.addEventListener('pointerdown', e => {
   setNdc(e);
   down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false };
-  if (state === 'popped' && !busy && hitRecord()) {
-    dragRecord = true;
+  if (busy) return;
+  if (state === 'popped' && hitRecord()) dragging = recHeft;
+  else if ((state === 'closed' || state === 'open') && hitSleeve()) dragging = turnHeft;
+  if (dragging) {
+    dragging.vel.set(0, 0);
     controls.enabled = false;
-    angVel.set(0, 0, 0);
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add('dragging');
   }
-}, { capture: true });   // run before OrbitControls so it never starts orbiting on a record grab
+}, { capture: true });   // run before OrbitControls so it never starts orbiting on a grab
 canvas.addEventListener('pointermove', e => {
   if (down) {
     if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) down.moved = true;
-    if (dragRecord) {
+    if (dragging && down.moved) {
       const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
-      rotateRecord(dx, dy);
-      const now = performance.now(), dt = Math.max(1, now - lastMove);
-      angVel.set(dx / dt * 16, dy / dt * 16, 0);
+      dragging.push(dx, dy);
+      const now = performance.now(), dt = Math.max(8, now - lastMove);
+      dragging.vel.set(dx / dt * 16, dy / dt * 16);
       lastMove = now;
     }
     down.lx = e.clientX; down.ly = e.clientY;
@@ -1133,11 +1128,11 @@ canvas.addEventListener('pointermove', e => {
 function endPointer(e) {
   if (!down) return;
   const wasClick = !down.moved;
-  if (dragRecord) {
-    dragRecord = false;
+  if (dragging) {
+    if (performance.now() - lastMove > 80) dragging.vel.set(0, 0);
+    dragging = null;
     controls.enabled = true;
     canvas.classList.remove('dragging');
-    if (performance.now() - lastMove > 80) angVel.set(0, 0, 0);
   }
   down = null;
   if (wasClick && !busy && e.type === 'pointerup') {
@@ -1153,14 +1148,12 @@ ui.play.onclick = play;
 ui.pop.onclick = () => !busy && state === 'open' && popRecord();
 ui.back.onclick = () => !busy && (state === 'popped' || state === 'deck') && putBack();
 ui.close.onclick = () => !busy && state !== 'closed' && closeSleeve();
-ui.spin.onclick = () => { spinning = !spinning; refreshUI(); };
 ui.npToggle.onclick = () => { unlockAudio(); togglePlay(); };
-ui.npLift.onclick = () => !busy && state === 'deck' && liftToHand();
+ui.lift.onclick = () => !busy && state === 'deck' && liftToHand();
+ui.npPrev.onclick = () => !busy && state === 'deck' && changeTrack(trackIx - 1);
+ui.npNext.onclick = () => !busy && state === 'deck' && changeTrack(trackIx + 1);
 ui.view.onclick = () => {
-  if (state === 'popped' && !busy) {
-    const q0 = record.quaternion.clone(); angVel.set(0, 0, 0);
-    tween(0.8, k => record.quaternion.slerpQuaternions(q0, ID, k));
-  }
+  if (!busy) { recHeft.target.identity(); recHeft.vel.set(0, 0); turnHeft.target.identity(); turnHeft.vel.set(0, 0); }
   frameFor(state);
 };
 
@@ -1179,26 +1172,19 @@ let curSpin = 0, lastUi = 0;
 function loop(now) {
   frameNow = now;
   const dt = Math.min(clock.getDelta(), 0.05);
-  const t = clock.elapsedTime;
   stepTweens(now);
-  root.position.y = Math.sin(t * 0.9) * 0.035;
-  root.rotation.z = Math.sin(t * 0.6) * 0.004;
   if (record) {
     let want = 0;
-    if (state === 'popped' && spinning && !busy) want = SHOW_SPIN;
     if (state === 'deck' && deckSpin) want = RPM33;
     // a real platter takes about a second to reach speed
     curSpin = lerp(curSpin, want, 1 - Math.exp(-dt * (state === 'deck' ? 2.2 : 3)));
     recordSpin.rotation.z -= curSpin * dt;
     if (state === 'deck' || deck.visible) platter.rotation.y -= (state === 'deck' ? curSpin : 0) * dt;
-    if (!dragRecord && angVel.lengthSq() > 1e-4) {
-      rotateRecord(angVel.x, angVel.y);
-      angVel.multiplyScalar(Math.exp(-dt * 3.2));
-    }
+    if (state === 'popped' && !busy) recHeft.step(dt, dragging === recHeft);
+    if ((state === 'closed' || state === 'open') && !busy) turnHeft.step(dt, dragging === turnHeft);
     // the stylus tracks inward with the song
     if (armDown && !busy && audio.duration) {
-      const f = audio.currentTime / audio.duration;
-      setArm(armAngleFor(lerp(GROOVE1 + .02, GROOVE0 + .01, f)), 0);
+      setArm(armAngleFor(grooveRadius(trackIx, audio.currentTime / audio.duration)), 0);
     }
     if (state === 'deck' && now - lastUi > 200) {
       lastUi = now;
