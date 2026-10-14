@@ -258,6 +258,7 @@ body.dragging #deck{outline:3px dashed var(--pink);outline-offset:8px}
   <span class="seg"><button id="mEdit" class="on">编辑</button><button id="mView">预览</button></span>
   <button id="bAuto" class="go">＋ 一键放入截图</button>
   <button id="bPdf">导出 PDF</button>
+  <button id="bPptx">导出 PPTX</button>
   <button id="bSave">下载 HTML</button>
   <button id="bReset">清空重来</button>
   <span class="status" id="status"></span>
@@ -1230,6 +1231,37 @@ async function exportPdf(){
   }finally{b.disabled=false;if(wasEdit)setMode(true);}
 }
 window.__slideCanvas=slideCanvas;
+
+/* PowerPoint: every slide as a full-bleed picture rendered like the PDF (no font substitution, no broken text),
+   with the slide's text copied into the speaker notes */
+async function exportPptx(){
+  const b=$('bPptx');b.disabled=true;const wasEdit=EDIT;
+  try{
+    await setMode(false);
+    status('正在准备 PPTX…');
+    if(!window.PptxGenJS)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js');
+    const pptx=new window.PptxGenJS();
+    pptx.defineLayout({name:'WIDE169',width:13.333,height:7.5});pptx.layout='WIDE169';
+    pptx.title='R3HAB × 徐明浩 单曲合作提案';pptx.company='GREENROOM.AGENCY';
+    const slides=[...deck.querySelectorAll('.slide')];
+    for(let i=0;i<slides.length;i++){
+      status(`正在生成 PPTX ${i+1}/${slides.length}`);
+      let cv=null;
+      if(FO_OK!==false){try{cv=await slideCanvas(slides[i],2);FO_OK=true;}catch(e){FO_OK=false;}}
+      if(!cv)cv=await html2canvasSlide(slides[i]);
+      const sl=pptx.addSlide();
+      sl.background={color:'F5F4EF'};
+      sl.addImage({data:cv.toDataURL('image/jpeg',0.92),x:0,y:0,w:13.333,h:7.5});
+      const txt=slides[i].innerText.replace(/\n{2,}/g,'\n').trim();
+      if(txt)sl.addNotes(txt);
+    }
+    const blob=await pptx.write({outputType:'blob'});
+    await deliver(blob,'R3HAB_x_徐明浩_合作提案_'+stamp()+'.pptx');
+  }catch(e){status('PPTX 生成失败：请稍后再试，或先导出 PDF');}
+  finally{b.disabled=false;if(wasEdit)setMode(true);}
+}
+$('bPptx').onclick=exportPptx;
+window.__exportPptx=exportPptx;
 $('bPdf').onclick=exportPdf;
 window.__exportPdf=exportPdf;
 window.addEventListener('beforeprint',()=>deck.querySelectorAll('.slide').forEach(s=>s.style.transform='none'));
