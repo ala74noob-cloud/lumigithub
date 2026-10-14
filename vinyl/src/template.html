@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>白胶唱片</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: full-bleed WebGL stage; one glass dock pinned to the bottom (hint · now playing · toolbar). */
+:root{
+  color-scheme:dark;
+  --blue:#126698;
+  --bg-1:#1a2a38;
+  --bg-2:#0b1118;
+  --ink:#f5f7fa;
+  --ink-2:rgba(245,247,250,.62);
+  --glass:rgba(255,255,255,.11);
+  --glass-hi:rgba(255,255,255,.2);
+  --glass-line:rgba(255,255,255,.24);
+  --glass-shade:rgba(0,0,0,.35);
+  --solid:#f5f7fa;
+  --on-solid:#0b1118;
+  --sf:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",system-ui,sans-serif;
+}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg-2);}
+body{
+  color:var(--ink);font-family:var(--sf);font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;}
+canvas#gl.pointer{cursor:pointer;}
+canvas#gl.dragging{cursor:grabbing;}
+/* film grain over everything, matching the photos */
+.grain{position:fixed;inset:-50%;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation:grain 1s steps(6) infinite;}
+@keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
+
+/* iOS-style frosted glass */
+.glass{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
+  border:1px solid var(--glass-line);
+  box-shadow:inset 0 1px 0 var(--glass-hi), 0 12px 32px var(--glass-shade);
+}
+.dock{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  pointer-events:none;}
+.dock > *{pointer-events:auto;max-width:100%;}
+.hint{pointer-events:none !important;font-size:12px;font-weight:500;letter-spacing:.02em;color:var(--ink-2);
+  padding:6px 12px;border-radius:999px;transition:opacity .35s;text-align:center;}
+.toolbar{display:flex;gap:2px;padding:5px;border-radius:999px;overflow-x:auto;scrollbar-width:none;}
+.toolbar::-webkit-scrollbar{display:none;}
+.toolbar button{
+  appearance:none;border:0;background:transparent;color:var(--ink);font:600 14px/1 var(--sf);letter-spacing:-.01em;
+  display:inline-flex;align-items:center;gap:.3em;white-space:nowrap;
+  padding:10px 15px;border-radius:999px;cursor:pointer;transition:background .2s,opacity .25s,transform .15s;}
+.toolbar button[hidden]{display:none;}
+.toolbar button:hover{background:var(--glass-hi);}
+.toolbar button:active{transform:scale(.96);}
+.toolbar button.primary{background:var(--solid);color:var(--on-solid);}
+.toolbar button.primary:hover{background:var(--solid);opacity:.9;}
+.toolbar button:disabled{opacity:.35;cursor:default;}
+.toolbar svg{width:15px;height:15px;fill:currentColor;flex:none;}
+button:focus-visible,input:focus-visible{outline:2px solid var(--solid);outline-offset:2px;}
+
+/* now playing */
+.np{width:min(420px,100%);box-sizing:border-box;border-radius:22px;padding:12px;display:grid;
+  grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;transition:opacity .35s,transform .35s;}
+.np[hidden]{display:none !important;}
+.np img{width:56px;height:56px;border-radius:10px;object-fit:cover;display:block;box-shadow:0 4px 12px rgba(0,0,0,.35);}
+.np-meta{min-width:0;display:flex;flex-direction:column;gap:3px;}
+.np-title{font:600 15px/1.2 var(--sf);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.np-sub{font:500 12px/1.2 var(--sf);color:var(--ink-2);}
+.np-time{display:flex;justify-content:space-between;font:500 11px/1 var(--sf);color:var(--ink-2);font-variant-numeric:tabular-nums;}
+.np input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:4px 0 0;background:transparent;cursor:pointer;}
+.np input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--solid),var(--solid)) 0/var(--p,0%) 100% no-repeat,var(--glass-hi);}
+.np input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--glass-hi);}
+.np input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--solid);}
+.np input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--solid);margin-top:-4px;box-shadow:0 1px 4px rgba(0,0,0,.4);}
+.np input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--solid);}
+.np-ctl{display:flex;gap:6px;align-items:center;}
+.round{appearance:none;border:0;width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  background:var(--glass-hi);color:var(--ink);transition:transform .15s,opacity .2s;}
+.round.solid{background:var(--solid);color:var(--on-solid);}
+.round:active{transform:scale(.92);}
+.round svg{width:18px;height:18px;fill:currentColor;}
+.round:disabled{opacity:.4;cursor:default;}
+
+.loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--ink-2);font:500 13px var(--sf);letter-spacing:.04em;transition:opacity .6s;pointer-events:none;}
+@media (max-width:520px){
+  .np{grid-template-columns:44px minmax(0,1fr) auto;gap:10px;}
+  .np img{width:44px;height:44px;}
+  .round{width:34px;height:34px;}
+  .toolbar button{padding:10px 12px;font-size:13px;}
+  .toolbar button .lbl-long{display:none;}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="grain"></div>
+<div class="loading" id="loading">Loading…</div>
+
+<div class="dock">
+  <div class="hint glass" id="hint">Tap the sleeve to unwrap</div>
+  <section class="np glass" id="np" hidden aria-label="Now playing">
+    <img id="npArt" alt="Album cover">
+    <div class="np-meta">
+      <div class="np-title" id="npTitle">MIX BEAT 3</div>
+      <div class="np-sub" id="npSub">Side A · 33⅓ RPM</div>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Playback position">
+      <div class="np-time"><span id="tCur">0:00</span><span id="tRem">-0:00</span></div>
+    </div>
+    <div class="np-ctl">
+      <button class="round" id="npPrev" aria-label="Previous track"><svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM19 5v14L9 12z"/></svg></button>
+      <button class="round solid" id="npToggle" aria-label="Pause"><svg viewBox="0 0 24 24"><path id="npIcon" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button class="round" id="npNext" aria-label="Next track"><svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM5 5v14l10-7z"/></svg></button>
+    </div>
+  </section>
+  <nav class="toolbar glass" aria-label="Controls">
+    <button id="btnPlay" class="primary"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>Play</button>
+    <button id="btnPop" hidden>Take Out<span class="lbl-long">Record</span></button>
+    <button id="btnLift" hidden><svg viewBox="0 0 24 24"><path d="M12 4.5l7.5 8.5h-15zM4.5 16h15v3h-15z"/></svg>Lift</button>
+    <button id="btnBack" hidden>Put Back</button>
+    <button id="btnClose" hidden>Close<span class="lbl-long">Sleeve</span></button>
+  </nav>
+</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const IMG = {
+  cover:  '__COVER__',
+  label:  '__LABEL__',
+  spread: '__SPREAD__',
+};
+// Side A, outermost groove first
+const PLAYLIST = [
+  { title: '时间有什么好追的', src: 'tracks/01.mp3', dur: 260.3 },
+  { title: '苹果树下', src: 'tracks/02.mp3', dur: 237.7 },
+  { title: '我想我们也会被忘记', src: 'tracks/03.mp3', dur: 262.9 },
+  { title: '我想念海，她依旧是我的夏天 II', src: 'tracks/04.mp3', dur: 231.0 },
+  { title: '小溪', src: 'tracks/05.mp3', dur: 264.8 },
+];
+const BLUE = '#126698';          // sampled from the sky in the cover photo
+
+/* ---------- dimensions (1 unit ≈ 10 cm) ---------- */
+const S = 3.1;        // sleeve square side (12")
+const T = 0.02;       // board thickness (heavy 2 mm board)
+const G = 0.034;      // pocket gap inside the right panel
+const R = 1.48;       // record radius
+// record proportions measured from the supplied 12" model (300 mm disc):
+// label Ø98 mm, spindle hole Ø7.4 mm
+const LABEL_R = R * 0.049 / 0.15;
+const REC_LAND = 0.0095;   // half-thickness at the label
+const HOLE = R * 0.0037 / 0.15;
+const H = 0.022;      // thickest point (edge bead), ≈2.2 mm — a 180 g pressing
+
+/* ---------- renderer / scene ---------- */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+{
+  // backdrop drawn in the scene so reflections and the page background agree
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const g = c.getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+  const gr = g.createRadialGradient(256, 150, 0, 256, 220, 420);
+  gr.addColorStop(0, css.getPropertyValue('--bg-1').trim()); gr.addColorStop(0.7, css.getPropertyValue('--bg-2').trim());
+  g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+  scene.background = new THREE.CanvasTexture(c);
+  scene.background.colorSpace = THREE.SRGBColorSpace;
+}
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+camera.position.set(2.2, 1.4, 8.5);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 2.0;
+controls.maxDistance = 18;
+let homeTimer = 0;
+let camEpoch = 0;   // bumping it lets a hand on the camera interrupt a framing move
+controls.addEventListener('start', () => { clearTimeout(homeTimer); camEpoch++; });
+controls.addEventListener('end', () => {
+  clearTimeout(homeTimer);
+  homeTimer = setTimeout(() => { if (!busy) frameFor(state); }, 450);
+});
+
+scene.add(new THREE.HemisphereLight(0xdfeeff, 0x1a2430, 0.5));
+const key = new THREE.DirectionalLight(0xfff4e6, 1.6);
+key.position.set(4, 6, 7);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -7; key.shadow.camera.right = 7;
+key.shadow.camera.top = 7;   key.shadow.camera.bottom = -7;
+key.shadow.camera.far = 30;
+key.shadow.bias = -0.0004;
+key.shadow.radius = 6;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x8fc4ff, 0.7);
+rim.position.set(-6, 2, -5);
+scene.add(rim);
+
+// soft shadow catcher behind the objects
+const catcher = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.ShadowMaterial({ opacity: 0.28 })
+);
+catcher.position.z = -1.2;
+catcher.receiveShadow = true;
+scene.add(catcher);
+
+const root = new THREE.Group();   // gentle idle float
+scene.add(root);
+
+/* ---------- textures ---------- */
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+function loadImg(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+function canvasTex(c, srgb = true) {
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = maxAniso;
+  return t;
+}
+function addGrain(ctx, w, h, amt) {
+  const d = ctx.getImageData(0, 0, w, h);
+  for (let i = 0; i < d.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * amt;
+    d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n;
+  }
+  ctx.putImageData(d, 0, 0);
+}
+
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// height field (0..1 floats) → tangent-space normal map
+function heightToNormal(h, size, k, wrap) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'), out = g.createImageData(size, size);
+  const at = (x, y) => wrap
+    ? h[((y + size) % size) * size + ((x + size) % size)]
+    : h[Math.min(size - 1, Math.max(0, y)) * size + Math.min(size - 1, Math.max(0, x))];
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const dx = (at(x + 1, y) - at(x - 1, y)) * k, dy = (at(x, y + 1) - at(x, y - 1)) * k;
+    const l = Math.hypot(dx, dy, 1), i = (y * size + x) * 4;
+    out.data[i] = (-dx / l * .5 + .5) * 255;
+    out.data[i + 1] = (dy / l * .5 + .5) * 255;
+    out.data[i + 2] = (1 / l * .5 + .5) * 255;
+    out.data[i + 3] = 255;
+  }
+  g.putImageData(out, 0, 0);
+  return c;
+}
+function readHeight(g, size, jitter) {
+  const d = g.getImageData(0, 0, size, size).data, h = new Float32Array(size * size);
+  for (let i = 0; i < h.length; i++) h[i] = d[i * 4] / 255 + (Math.random() - .5) * jitter;
+  return h;
+}
+
+// tiling uncoated card stock: cloudy formation + short fibres + tooth
+function makePaperMaps(size = 512) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#808080'; g.fillRect(0, 0, size, size);
+  const tiles = [-size, 0, size];
+  for (let i = 0; i < 220; i++) {
+    const x = Math.random() * size, y = Math.random() * size, r = 10 + Math.random() * 46;
+    const v = Math.random() < .5 ? 0 : 255;
+    for (const ox of tiles) for (const oy of tiles) {
+      const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+      gr.addColorStop(0, `rgba(${v},${v},${v},.07)`); gr.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      g.fillStyle = gr; g.fillRect(x + ox - r, y + oy - r, 2 * r, 2 * r);
+    }
+  }
+  g.lineCap = 'round';
+  for (let i = 0; i < 3200; i++) {
+    const x = Math.random() * size, y = Math.random() * size, len = 3 + Math.random() * 16, a = Math.random() * Math.PI * 2;
+    const v = Math.random() < .55 ? 255 : 0, bend = (Math.random() - .5) * 6;
+    g.strokeStyle = `rgba(${v},${v},${v},${.07 + Math.random() * .12})`;
+    g.lineWidth = .5 + Math.random() * .9;
+    for (const ox of tiles) for (const oy of tiles) {
+      const X = x + ox, Y = y + oy;
+      if (X < -20 || X > size + 20 || Y < -20 || Y > size + 20) continue;
+      g.beginPath(); g.moveTo(X, Y);
+      g.quadraticCurveTo(X + Math.cos(a) * len / 2 - Math.sin(a) * bend, Y + Math.sin(a) * len / 2 + Math.cos(a) * bend,
+                         X + Math.cos(a) * len, Y + Math.sin(a) * len);
+      g.stroke();
+    }
+  }
+  const h = readHeight(g, size, .08);
+  const rc = document.createElement('canvas'); rc.width = rc.height = size;
+  const rg = rc.getContext('2d'), rd = rg.createImageData(size, size);
+  for (let i = 0; i < h.length; i++) {
+    const v = 225 + (h[i] - .5) * 90;
+    rd.data[i * 4] = rd.data[i * 4 + 1] = rd.data[i * 4 + 2] = v; rd.data[i * 4 + 3] = 255;
+  }
+  rg.putImageData(rd, 0, 0);
+  const normal = canvasTex(heightToNormal(h, size, 2.2, true), false);
+  const rough = canvasTex(rc, false);
+  for (const t of [normal, rough]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 4); }
+  return { normal, rough };
+}
+
+// print a board face: artwork or flat ink, then handling wear (scuffed edges,
+// whitened corners) and optional ring wear where the record presses through
+function printFace({ img, sx = 0, sy = 0, sw, sh, color, ring = 0, size = 1024 }) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  if (img) g.drawImage(img, sx, sy, sw ?? img.width, sh ?? img.height, 0, 0, size, size);
+  else {
+    g.fillStyle = color; g.fillRect(0, 0, size, size);
+    const v = g.createRadialGradient(size / 2, size * .4, size * .08, size / 2, size / 2, size * .8);
+    v.addColorStop(0, 'rgba(255,255,255,.05)'); v.addColorStop(1, 'rgba(0,0,0,.16)');
+    g.fillStyle = v; g.fillRect(0, 0, size, size);
+    addGrain(g, size, size, 18);
+  }
+  g.globalCompositeOperation = 'screen';
+  if (ring) {
+    const rr = (R / S) * size * 0.99, m = size / 2;
+    g.lineCap = 'round';
+    for (let i = 0; i < 260; i++) {
+      const a0 = Math.random() * Math.PI * 2, a1 = a0 + .04 + Math.random() * .35;
+      g.strokeStyle = `rgba(255,255,255,${ring * (.3 + Math.random() * .7)})`;
+      g.lineWidth = 2 + Math.random() * 12;
+      g.beginPath(); g.arc(m, m, rr + (Math.random() - .5) * 10, a0, a1); g.stroke();
+    }
+  }
+  for (let side = 0; side < 4; side++) for (let i = 0; i < 260; i++) {
+    const t = Math.random() * size, w = .8 + Math.random() * (Math.random() < .08 ? 5 : 2), l = 2 + Math.random() * 18;
+    g.fillStyle = `rgba(255,255,255,${.08 + Math.random() * .3})`;
+    if (side === 0) g.fillRect(t, 0, l, w);
+    else if (side === 1) g.fillRect(t, size - w, l, w);
+    else if (side === 2) g.fillRect(0, t, w, l);
+    else g.fillRect(size - w, t, w, l);
+  }
+  for (const [x, y] of [[0, 0], [size, 0], [0, size], [size, size]]) {
+    const cr = 18 + Math.random() * 22;
+    const gr = g.createRadialGradient(x, y, 0, x, y, cr);
+    gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(x - cr, y - cr, 2 * cr, 2 * cr);
+  }
+  g.globalCompositeOperation = 'source-over';
+  return canvasTex(c);
+}
+
+
+/* ---------- the record ----------
+   A lathe-turned profile (thicker label land, thinner groove field, raised edge
+   bead, rounded rim) instead of a flat cylinder, and four generated maps:
+   milky resin colour with pressing swirls, groove normals, roughness, and an
+   anisotropy map whose direction runs round the grooves, which is what gives
+   real vinyl its two bright wedges of light. Both sides share the same maps. */
+function valueNoise(seed) {
+  let s = seed;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const p = [...Array(256).keys()];
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  const perm = new Uint16Array(512); for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+  const val = Float32Array.from({ length: 256 }, rnd);
+  return (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const X = xi & 255, Y = yi & 255;
+    const a = val[perm[X + perm[Y]]], b = val[perm[X + 1 + perm[Y]]];
+    const c = val[perm[X + perm[Y + 1]]], d = val[perm[X + 1 + perm[Y + 1]]];
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  };
+}
+const fbm = (n, x, y, o = 4) => { let f = 0, a = .5; for (let i = 0; i < o; i++) { f += a * n(x, y); x *= 2.03; y *= 2.03; a *= .5; } return f; };
+
+// zones, in record units from the centre
+const RUNOUT0 = LABEL_R + 0.04;            // end of the label step
+const GROOVE0 = LABEL_R + 0.1;             // last groove (run-out area lies inside it)
+const GROOVE1 = R - 0.06;                  // first groove (lead-in lies outside it)
+// band boundaries (0 = innermost groove, 1 = outermost), sized by each song's length
+const TRACKS = (() => {
+  const total = PLAYLIST.reduce((a, t) => a + t.dur, 0);
+  let acc = 0; const b = [1];
+  for (const t of PLAYLIST) { acc += t.dur; b.push(Math.max(0, 1 - acc / total)); }
+  return b.reverse();
+})();
+// radius under the stylus at progress p (0..1) through track i
+function grooveRadius(i, p) {
+  const n = PLAYLIST.length, lo = TRACKS[n - 1 - i], hi = TRACKS[n - i];
+  const inset = GAP_W / (GROOVE1 - GROOVE0);
+  const f = (hi - inset) - p * ((hi - inset) - (lo + inset));
+  return GROOVE0 + f * (GROOVE1 - GROOVE0);
+}
+const GAP_W = 0.013;
+const loud = valueNoise(11);
+function grooveCalc(r) {
+  if (r < GROOVE0 || r > GROOVE1) return { a: 0, gap: 1 };
+  const f = (r - GROOVE0) / (GROOVE1 - GROOVE0);
+  let gap = 0;
+  for (let i = 1; i < TRACKS.length - 1; i++) {
+    const d = Math.abs(f - TRACKS[i]) * (GROOVE1 - GROOVE0);
+    gap = Math.max(gap, 1 - smooth(GAP_W * .5, GAP_W, d));
+  }
+  const level = .45 + .55 * fbm(loud, r * 26, 3.7, 3);     // louder passages cut wider grooves
+  return { a: level * (1 - gap), gap };
+}
+const LUT_N = 8192, LUT_MAX = R * 1.5;
+const LUT = Array.from({ length: LUT_N }, (_, i) => grooveCalc(i / (LUT_N - 1) * LUT_MAX));
+// → { a: groove depth 0..1, gap: 0..1 (1 = smooth band between tracks) }
+const grooveAt = r => LUT[Math.min(LUT_N - 1, Math.round(r / LUT_MAX * (LUT_N - 1)))];
+
+function makeRecordMaps(labelImg) {
+  const N = 2048, c = N / 2, unit = R / c;
+  // milky resin: domain-warped noise gives the soft flow lines of pressed coloured vinyl
+  const SW = 512, swirl = new Float32Array(SW * SW), n1 = valueNoise(3), n2 = valueNoise(7);
+  for (let y = 0; y < SW; y++) for (let x = 0; x < SW; x++) {
+    const X = x / SW * 2 - 1, Y = y / SW * 2 - 1;
+    const qx = fbm(n1, X * 1.8 + 1.3, Y * 1.8 + 7.1), qy = fbm(n1, X * 1.8 + 5.2, Y * 1.8 + 1.3);
+    const w = fbm(n2, X * 1.4 + 3.2 * qx, Y * 1.4 + 3.2 * qy);
+    swirl[y * SW + x] = fbm(n2, X * 2.2 + 4 * w + 2.0, Y * 2.2 + 4 * w + 9.0);
+  }
+  const col = document.createElement('canvas'); col.width = col.height = N;
+  const cg = col.getContext('2d'), cd = cg.createImageData(N, N);
+  const nor = document.createElement('canvas'); nor.width = nor.height = N;
+  const ng = nor.getContext('2d'), nd = ng.createImageData(N, N);
+  const M = 1024, mc = M / 2;
+  const rou = document.createElement('canvas'); rou.width = rou.height = M;
+  const rg = rou.getContext('2d'), rd = rg.createImageData(M, M);
+  const ani = document.createElement('canvas'); ani.width = ani.height = M;
+  const ag = ani.getContext('2d'), ad = ag.createImageData(M, M);
+
+  const PERIOD = 3.1 * unit;                       // visible groove pitch at texture resolution
+  const dark = [229, 226, 220], base = [243, 240, 233], bright = [252, 251, 248];
+  for (let py = 0; py < N; py++) for (let px = 0; px < N; px++) {
+    const dx = px + .5 - c, dy = c - (py + .5), rp = Math.hypot(dx, dy), r = rp * unit, i = (py * N + px) * 4;
+    const sv = swirl[((py * SW / N) | 0) * SW + ((px * SW / N) | 0)];
+    const t = smooth(.36, .7, sv), vein = Math.exp(-(((sv - .55) / .012) ** 2)) * .6;
+    let R0 = t < .5 ? dark[0] + (base[0] - dark[0]) * t * 2 : base[0] + (bright[0] - base[0]) * (t - .5) * 2;
+    let G0 = t < .5 ? dark[1] + (base[1] - dark[1]) * t * 2 : base[1] + (bright[1] - base[1]) * (t - .5) * 2;
+    let B0 = t < .5 ? dark[2] + (base[2] - dark[2]) * t * 2 : base[2] + (bright[2] - base[2]) * (t - .5) * 2;
+    R0 += vein * 6; G0 += vein * 6; B0 += vein * 6;
+    const gr = grooveAt(r);
+    const tone = 1 - gr.a * .09 + gr.gap * (r > GROOVE0 && r < GROOVE1 ? .02 : 0) - (r > LABEL_R && r < RUNOUT0 ? .02 : 0);
+    cd.data[i] = R0 * tone; cd.data[i + 1] = G0 * tone; cd.data[i + 2] = B0 * tone; cd.data[i + 3] = 255;
+    // groove ridges: height = a·sin(2πr/p), slope taken analytically
+    let slope = gr.a * .55 * Math.cos(2 * Math.PI * r / PERIOD);
+    // lock groove in the run-out, and the edge of the lead-in
+    slope += .5 * Math.sin((r - (GROOVE0 - .025)) / .004) * Math.exp(-(((r - (GROOVE0 - .025)) / .006) ** 2));
+    const ux = rp ? dx / rp : 0, uy = rp ? dy / rp : 0;
+    let nx = -slope * ux, ny = -slope * uy, nz = 1;
+    if (r < LABEL_R) { nx += (Math.random() - .5) * .08; ny += (Math.random() - .5) * .08; }   // paper tooth
+    const l = Math.hypot(nx, ny, nz);
+    nd.data[i] = (nx / l * .5 + .5) * 255; nd.data[i + 1] = (ny / l * .5 + .5) * 255; nd.data[i + 2] = (nz / l * .5 + .5) * 255; nd.data[i + 3] = 255;
+  }
+  for (let py = 0; py < M; py++) for (let px = 0; px < M; px++) {
+    const dx = px + .5 - mc, dy = mc - (py + .5), rp = Math.hypot(dx, dy), r = rp * R / mc, i = (py * M + px) * 4;
+    const gr = grooveAt(r);
+    let rough;
+    if (r < LABEL_R) rough = .82;                              // matte paper label
+    else if (r < GROOVE0 || r > GROOVE1) rough = .07;           // polished run-out / lead-in / bead
+    else rough = .1 + gr.a * .16 - gr.gap * .05;                // groove field
+    rd.data[i] = rd.data[i + 1] = rd.data[i + 2] = rough * 255; rd.data[i + 3] = 255;
+    // anisotropy: direction tangent to the circle (in uv space), strength in blue
+    const tx = rp ? -dy / rp : 1, ty = rp ? dx / rp : 0;
+    const str = r < LABEL_R ? 0 : (r < GROOVE0 || r > GROOVE1) ? .12 : .35 + .65 * gr.a;
+    ad.data[i] = (tx * .5 + .5) * 255; ad.data[i + 1] = (-ty * .5 + .5) * 255; ad.data[i + 2] = str * 255; ad.data[i + 3] = 255;
+  }
+  cg.putImageData(cd, 0, 0); ng.putImageData(nd, 0, 0); rg.putImageData(rd, 0, 0); ag.putImageData(ad, 0, 0);
+  // label: the photo, a printed ring and a faint pressed edge
+  const lp = LABEL_R / unit;
+  cg.save(); cg.beginPath(); cg.arc(c, c, lp, 0, Math.PI * 2); cg.clip();
+  cg.drawImage(labelImg, c - lp, c - lp, lp * 2, lp * 2);
+  const v = cg.createRadialGradient(c, c, lp * .6, c, c, lp);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.18)');
+  cg.fillStyle = v; cg.fillRect(c - lp, c - lp, lp * 2, lp * 2);
+  cg.restore();
+  cg.beginPath(); cg.arc(c, c, lp + 1.5, 0, Math.PI * 2); cg.strokeStyle = 'rgba(0,0,0,.14)'; cg.lineWidth = 3; cg.stroke();
+  cg.beginPath(); cg.arc(c, c, HOLE / unit + 6, 0, Math.PI * 2); cg.strokeStyle = 'rgba(255,255,255,.35)'; cg.lineWidth = 3; cg.stroke();
+  const map = canvasTex(col), normal = canvasTex(nor, false), rough = canvasTex(rou, false), aniso = canvasTex(ani, false);
+  return { map, normal, rough, aniso };
+}
+
+function recordGeometry() {
+  // half-thickness along the radius
+  const LAND = REC_LAND, FIELD = 0.0082, BEAD = H / 2;
+  const half = r => {
+    if (r < LABEL_R + 0.012) return LAND;
+    if (r < RUNOUT0) return LAND + (FIELD - LAND) * smooth(LABEL_R + 0.012, RUNOUT0, r);
+    if (r < R - 0.07) return FIELD;
+    return FIELD + (BEAD - FIELD) * smooth(R - 0.07, R - 0.024, r);
+  };
+  const rs = [HOLE, HOLE + .004, .08, .2, .35, LABEL_R - .01, LABEL_R + .006, LABEL_R + .012, LABEL_R + .02, LABEL_R + .03, RUNOUT0,
+              .75, 1.0, 1.25, R - .07, R - .055, R - .04, R - .03, R - .024];
+  const top = rs.map(r => new THREE.Vector2(r, half(r)));
+  const edge = [];
+  for (let k = 1; k < 10; k++) {            // rounded rim: quarter ellipse down to the equator
+    const a = k / 10 * Math.PI / 2;
+    edge.push(new THREE.Vector2(R - .024 + .024 * Math.sin(a), BEAD * Math.cos(a)));
+  }
+  const upper = [...top, ...edge];          // inner → outer, top side
+  // counter-clockwise profile: bottom outward, rim up, top inward, then the hole wall
+  const pts = [
+    ...upper.map(p => new THREE.Vector2(p.x, -p.y)),
+    new THREE.Vector2(R, 0),
+    ...upper.slice().reverse(),
+    new THREE.Vector2(HOLE, -upper[0].y),   // close the spindle-hole wall
+  ];
+  const geo = new THREE.LatheGeometry(pts, 384);
+  geo.rotateX(Math.PI / 2);                 // spin axis → z, side A faces +z
+  const P = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < P.count; i++) {       // planar mapping per side; side B mirrored so its label reads correctly
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    uv.setXY(i, .5 + (z >= 0 ? x : -x) / (2 * R), .5 + y / (2 * R));
+  }
+  return geo;
+}
+
+/* ---------- turntable ---------- */
+const DECK_Y = -2.05, DECK_Z = 2.55;
+const PLATTER_C = new THREE.Vector3(-0.55, 0, 0.05);   // deck-local
+const PIVOT = new THREE.Vector3(1.68, 0, -1.2);         // tonearm pivot, deck-local
+const ARM_L = 2.36;                                     // pivot → stylus
+const SEAT_Y = 0.175 + REC_LAND;                        // record centre height on the mat
+let deck, platter, armYaw, armLift;
+function buildDeck() {
+  deck = new THREE.Group();
+  deck.position.set(0, -9, DECK_Z);
+  deck.visible = false;
+  root.add(deck);
+  const sh = m => { m.castShadow = true; m.receiveShadow = true; return m; };
+  const lacquer = new THREE.MeshPhysicalMaterial({ color: '#1d2024', roughness: .42, clearcoat: .7, clearcoatRoughness: .22 });
+  const alu = new THREE.MeshStandardMaterial({ color: '#c8ccd1', metalness: 1, roughness: .26 });
+  const steel = new THREE.MeshStandardMaterial({ color: '#e4e6e9', metalness: 1, roughness: .15 });
+  const black = new THREE.MeshStandardMaterial({ color: '#111214', roughness: .55 });
+  const felt = new THREE.MeshStandardMaterial({ color: '#2a2b2e', roughness: 1 });
+
+  const plinth = sh(new THREE.Mesh(new RoundedBoxGeometry(4.6, 0.34, 3.7, 5, 0.07), lacquer));
+  plinth.position.y = -0.17;
+  deck.add(plinth);
+  for (const [x, z] of [[-2, -1.55], [2, -1.55], [-2, 1.55], [2, 1.55]]) {
+    const f = sh(new THREE.Mesh(new THREE.CylinderGeometry(.2, .23, .12, 32), black));
+    f.position.set(x, -.4, z); deck.add(f);
+  }
+  // platter with a machined rim, felt mat, spindle
+  platter = new THREE.Group();
+  platter.position.copy(PLATTER_C);
+  deck.add(platter);
+  const plat = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.56, 1.54, .12, 128), alu));
+  plat.position.y = .1;
+  const mat = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, .015, 128), felt));
+  mat.position.y = .1675;
+  const spindle = sh(new THREE.Mesh(new THREE.CylinderGeometry(.033, .033, .09, 24), steel));
+  spindle.position.y = .21;
+  // strobe dots on the rim so the spin reads clearly
+  const dots = new THREE.InstancedMesh(new THREE.BoxGeometry(.03, .03, .012), steel, 90);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+  for (let i = 0; i < 90; i++) {
+    const a = i / 90 * Math.PI * 2;
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a + Math.PI / 2);
+    m4.compose(new THREE.Vector3(Math.cos(a) * 1.562, .1, Math.sin(a) * 1.562), q, new THREE.Vector3(1, 1, 1));
+    dots.setMatrixAt(i, m4);
+  }
+  platter.add(plat, mat, spindle, dots);
+  // tonearm: base, bearing, counterweight, tube, headshell, cartridge
+  const base = sh(new THREE.Mesh(new THREE.CylinderGeometry(.3, .32, .06, 48), alu));
+  base.position.set(PIVOT.x, .03, PIVOT.z);
+  const post = sh(new THREE.Mesh(new THREE.CylinderGeometry(.11, .13, .36, 32), black));
+  post.position.set(PIVOT.x, .2, PIVOT.z);
+  deck.add(base, post);
+  armYaw = new THREE.Group();
+  armYaw.position.set(PIVOT.x, .4, PIVOT.z);
+  deck.add(armYaw);
+  armLift = new THREE.Group();
+  armYaw.add(armLift);
+  const tubeFrom = new THREE.Vector3(0, 0, -.32), tubeTo = new THREE.Vector3(0, -.105, ARM_L - .28);
+  const tube = sh(new THREE.Mesh(new THREE.CylinderGeometry(.028, .028, tubeFrom.distanceTo(tubeTo), 20), steel));
+  tube.position.copy(tubeFrom).add(tubeTo).multiplyScalar(.5);
+  tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tubeTo.clone().sub(tubeFrom).normalize());
+  const cw = sh(new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .24, 32), black));
+  cw.rotation.x = Math.PI / 2; cw.position.set(0, .01, -.5);
+  const hub = sh(new THREE.Mesh(new THREE.SphereGeometry(.075, 24, 16), steel));
+  const shell = sh(new THREE.Mesh(new THREE.BoxGeometry(.2, .03, .38), alu));
+  shell.position.set(0, -.12, ARM_L - .12);
+  const cart = sh(new THREE.Mesh(new THREE.BoxGeometry(.12, .08, .19), black));
+  cart.position.set(0, -.168, ARM_L - .05);   // stylus tip lands on the record surface
+  const lift = sh(new THREE.Mesh(new THREE.BoxGeometry(.03, .1, .02), steel));
+  lift.position.set(.12, -.1, ARM_L - .22);
+  armLift.add(tube, cw, hub, shell, cart, lift);
+  // arm rest
+  const rest = sh(new THREE.Mesh(new THREE.CylinderGeometry(.035, .045, .3, 16), black));
+  rest.position.set(PIVOT.x, .15, PIVOT.z + 1.62);
+  deck.add(rest);
+  // a floor for the deck's own shadow
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: .38 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -.46; floor.receiveShadow = true;
+  deck.add(floor);
+  setArm(0, ARM_UP);
+}
+const ARM_UP = -0.055;
+function setArm(yaw, lift) { armYaw.rotation.y = yaw; armLift.rotation.x = lift; }
+// tonearm angle that puts the stylus at radius r on the record
+function armAngleFor(r) {
+  let lo = -1.2, hi = 0;
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2;
+    const d = Math.hypot(PIVOT.x + ARM_L * Math.sin(m) - PLATTER_C.x, PIVOT.z + ARM_L * Math.cos(m) - PLATTER_C.z);
+    if (d > r) hi = m; else lo = m;
+  }
+  return (lo + hi) / 2;
+}
+function deckWorldSeat() { return new THREE.Vector3(PLATTER_C.x, DECK_Y + SEAT_Y, DECK_Z + PLATTER_C.z); }
+
+/* ---------- build ---------- */
+const sleeve = new THREE.Group();      // shifts right when opened so the spread is centred
+root.add(sleeve);
+let leftHinge, record, recordSpin, pickRecord;
+const pickSleeve = [];
+
+/* board shape: every board shares the same faint dish, and the faces nearest the
+   record pillow outwards over it, so the jacket reads as card with something inside */
+const WARP = 0.006;
+const pillow = (x, y) => 1 - smooth(R - 0.32, R + 0.06, Math.hypot(x, y));
+const curl = (x, y) => WARP * ((x / S) ** 2 + 0.6 * (y / S) ** 2);
+const FRONT_BULGE = 0.004, INNER_BULGE = 0.002, BACK_BULGE = 0.007;
+function boardGeo(d, { front = 0, back = 0 } = {}) {
+  const geo = new THREE.BoxGeometry(S, S, d, 48, 48, 1);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    p.setZ(i, z + curl(x, y) + (z > 0 ? front : -back) * pillow(x, y));
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+let spine;
+async function build() {
+  const [coverImg, spreadImg, labelImg] = await Promise.all([
+    loadImg(IMG.cover), loadImg(IMG.spread), loadImg(IMG.label),
+  ]);
+  document.getElementById('npArt').src = IMG.cover;
+  const half = spreadImg.width / 2;
+  const coverTex = printFace({ img: coverImg, ring: 0.012 });
+  const spreadL = printFace({ img: spreadImg, sx: 0, sw: half, sh: spreadImg.height });
+  const spreadR = printFace({ img: spreadImg, sx: half, sw: half, sh: spreadImg.height });
+  const backTex = printFace({ color: BLUE, ring: 0.035 });
+
+  const pm = makePaperMaps();
+  const card = (opts) => new THREE.MeshPhysicalMaterial({
+    roughness: 1, roughnessMap: pm.rough, normalMap: pm.normal, normalScale: new THREE.Vector2(0.6, 0.6),
+    sheen: 0.12, sheenRoughness: 0.9, sheenColor: new THREE.Color('#ffffff'), metalness: 0, ...opts,
+  });
+  const edge  = card({ color: '#ebe5d8', normalScale: new THREE.Vector2(1.2, 1.2) });  // raw board core
+  const edgeB = card({ color: BLUE });
+  const printed = map => card({ map });
+  const mesh = (geo, mats) => { const m = new THREE.Mesh(geo, mats); m.castShadow = true; m.receiveShadow = true; return m; };
+
+  // right panel: inner board (spread right half) + back board (blue) with the record pocket between
+  const right = new THREE.Group();
+  sleeve.add(right);
+  const inner = mesh(boardGeo(T, { front: INNER_BULGE }), [edge, edge, edge, edge, printed(spreadR), edge]);
+  inner.position.z = -T / 2;
+  const back = mesh(boardGeo(T, { back: BACK_BULGE }), [edgeB, edgeB, edgeB, edgeB, edgeB, printed(backTex)]);
+  back.position.z = -T - G - T / 2;
+  right.add(inner, back);
+  // pocket walls: outer edge and bottom (top stays open for the record)
+  const wallD = G + 0.001, wz = -T - G / 2;
+  const wR = mesh(new THREE.BoxGeometry(0.01, S, wallD), edgeB); wR.position.set(S / 2 - 0.005, 0, wz);
+  const wB = mesh(new THREE.BoxGeometry(S, 0.01, wallD), edgeB); wB.position.set(0, -S / 2 + 0.005, wz);
+  right.add(wR, wB);
+
+  // rounded spine: a folded card hinge wrapping the whole stack
+  const SPINE_R = (3 * T + G) / 2 + 0.002;
+  spine = mesh(new THREE.CylinderGeometry(SPINE_R, SPINE_R, S, 28, 1, true, Math.PI, Math.PI), edgeB);
+  spine.position.set(-S / 2, 0, (T - 2 * T - G) / 2);
+  spine.userData.z0 = spine.position.z;
+  sleeve.add(spine);
+
+  // left panel (front cover) hinged at the spine
+  leftHinge = new THREE.Group();
+  leftHinge.position.set(-S / 2, 0, 0);
+  sleeve.add(leftHinge);
+  const front = mesh(boardGeo(T, { front: FRONT_BULGE }), [edge, edge, edge, edge, printed(coverTex), printed(spreadL)]);
+  front.position.set(S / 2, 0, T / 2 + 0.0005);
+  leftHinge.add(front);
+
+  pickSleeve.push(inner, back, front, spine, wR, wB);
+
+  // record: milky white resin, the green photo on both labels
+  record = new THREE.Group();
+  recordSpin = new THREE.Group();
+  record.add(recordSpin);
+  root.add(record);
+  const maps = makeRecordMaps(labelImg);
+  const vinyl = new THREE.MeshPhysicalMaterial({
+    map: maps.map, normalMap: maps.normal, normalScale: new THREE.Vector2(1.3, 1.3),
+    roughness: 1, roughnessMap: maps.rough, metalness: 0,
+    anisotropy: 1, anisotropyMap: maps.aniso,
+    sheen: 0.3, sheenRoughness: 0.55, sheenColor: new THREE.Color('#fff6ea'),
+    specularIntensity: 1, ior: 1.54,
+  });
+  const disc = new THREE.Mesh(recordGeometry(), vinyl);
+  disc.castShadow = true; disc.receiveShadow = true;
+  // invisible solid disc so grabbing the centre hole still counts as grabbing the record
+  pickRecord = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64), new THREE.MeshBasicMaterial({ visible: false }));
+  pickRecord.rotation.x = Math.PI / 2;
+  recordSpin.add(disc, pickRecord);
+  recHeft.obj = record;
+  recordSpin.rotation.z = Math.random() * Math.PI * 2;
+  record.visible = false;
+  placeRecordInPocket();
+
+  buildDeck();
+  frameFor('closed', true);
+}
+
+
+/* ---------- tweening ---------- */
+const tweens = new Set();
+const ease = {
+  inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  sine: t => .5 - Math.cos(Math.PI * t) / 2,
+  out: t => 1 - Math.pow(1 - t, 3),
+  outBack: t => { const c1 = 1.2, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+let frameNow = performance.now();
+function tween(dur, fn, e = ease.inOut) {
+  // starts on the current frame's clock so chained tweens never skip or stall a frame
+  return new Promise(res => tweens.add({ t0: frameNow, dur: dur * 1000, fn, e, res }));
+}
+function stepTweens(now) {
+  for (const tw of tweens) {
+    const k = Math.min(1, Math.max(0, (now - tw.t0) / tw.dur));
+    tw.fn(tw.e(k));
+    if (k >= 1) { tweens.delete(tw); tw.res(); }
+  }
+}
+const lerp = (a, b, t) => a + (b - a) * t;
+const wait = s => tween(s, () => {}, t => t);
+
+/* ---------- camera framing ---------- */
+const POP_POS = new THREE.Vector3(0, 0.15, 1.5);
+function fitDistance(w, h) {
+  const vf = THREE.MathUtils.degToRad(camera.fov);
+  const dh = (h / 2) / Math.tan(vf / 2);
+  const dw = (w / 2) / (Math.tan(vf / 2) * camera.aspect);
+  return Math.max(dh, dw) * 1.18;
+}
+function frameFor(which, instant = false) {
+  let target, dist, dir;
+  if (which === 'closed') { target = new THREE.Vector3(0, 0, 0); dist = fitDistance(S, S) * 1.25; dir = new THREE.Vector3(0.28, 0.16, 1); }
+  else if (which === 'open') { target = new THREE.Vector3(0, 0, 0); dist = fitDistance(2 * S, S); dir = new THREE.Vector3(0.12, 0.1, 1); }
+  else if (which === 'deck') { target = new THREE.Vector3(0.1, DECK_Y + 0.2, DECK_Z - 0.1); dist = fitDistance(5.2, 4.2) * 1.05; dir = new THREE.Vector3(0.2, 0.95, 1.05); }
+  else { target = POP_POS.clone(); dist = fitDistance(2 * R, 2 * R) * 1.25; dir = new THREE.Vector3(0.18, 0.12, 1); }
+  const to = target.clone().add(dir.normalize().multiplyScalar(dist));
+  if (instant) { controls.target.copy(target); camera.position.copy(to); controls.update(); return Promise.resolve(); }
+  const p0 = camera.position.clone(), t0 = controls.target.clone(), epoch = ++camEpoch;
+  return tween(1.4, k => {
+    if (epoch !== camEpoch) return;
+    camera.position.lerpVectors(p0, to, k); controls.target.lerpVectors(t0, target, k);
+  });
+}
+
+/* ---------- record paths ----------
+   Each move is one continuous curve (straight segments where the record must stay
+   in line with the pocket, tangent-matched Béziers elsewhere) eased once from end
+   to end, so there is never a stop-and-start in the middle. */
+const ID = new THREE.Quaternion();
+const FACE_UP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+function pocketPos() { return new THREE.Vector3(sleeve.position.x, 0, -T - G / 2); }
+function abovePocket() { return pocketPos().setY(S / 2 + R + 0.15); }
+function placeRecordInPocket() { record.position.copy(pocketPos()); record.quaternion.identity(); }
+function path(...curves) { const p = new THREE.CurvePath(); curves.forEach(c => p.add(c)); return p; }
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function fly(curve, dur, quatAt, e = ease.inOut) {
+  return tween(dur, k => {
+    curve.getPointAt(k, record.position);
+    if (quatAt) record.quaternion.copy(quatAt(k));
+  }, e);
+}
+const slerpQ = (a, b, t) => new THREE.Quaternion().slerpQuaternions(a, b, Math.min(1, Math.max(0, t)));
+
+/* ---------- state ---------- */
+let state = 'closed';   // closed | open | popped | deck
+let busy = false;
+const RPM33 = 33.333 * Math.PI / 30; // rad/s on the platter
+let deckSpin = false;                // platter motor on
+let armDown = false;
+let trackIx = 0;
+const ui = {
+  hint: document.getElementById('hint'),
+  play: document.getElementById('btnPlay'),
+  pop: document.getElementById('btnPop'),
+  lift: document.getElementById('btnLift'),
+  back: document.getElementById('btnBack'),
+  close: document.getElementById('btnClose'),
+  np: document.getElementById('np'),
+  npToggle: document.getElementById('npToggle'),
+  npIcon: document.getElementById('npIcon'),
+  npPrev: document.getElementById('npPrev'),
+  npNext: document.getElementById('npNext'),
+  npTitle: document.getElementById('npTitle'),
+  npSub: document.getElementById('npSub'),
+  seek: document.getElementById('seek'),
+  tCur: document.getElementById('tCur'),
+  tRem: document.getElementById('tRem'),
+};
+const ICON_PAUSE = 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z', ICON_PLAY = 'M7.5 4.5v15l12-7.5z';
+function refreshUI() {
+  ui.play.hidden = state === 'deck';
+  ui.pop.hidden = state !== 'open';
+  ui.back.hidden = state !== 'popped' && state !== 'deck';
+  ui.lift.hidden = state !== 'deck';
+  ui.close.hidden = state === 'closed';
+  ui.np.hidden = state !== 'deck';
+  [ui.play, ui.pop, ui.back, ui.close, ui.lift, ui.npToggle, ui.npPrev, ui.npNext].forEach(b => b.disabled = busy);
+  ui.npPrev.disabled ||= trackIx === 0;
+  ui.npNext.disabled ||= trackIx === PLAYLIST.length - 1;
+  ui.npTitle.textContent = PLAYLIST[trackIx].title;
+  ui.npSub.textContent = `Side A · ${trackIx + 1} of ${PLAYLIST.length} · 33⅓ RPM`;
+  const playingNow = state === 'deck' && !audio.paused;
+  ui.npIcon.setAttribute('d', playingNow ? ICON_PAUSE : ICON_PLAY);
+  ui.npToggle.setAttribute('aria-label', playingNow ? 'Pause' : 'Play');
+  ui.hint.textContent = busy ? ' ' : {
+    closed: 'Tap the sleeve to open it · drag to turn it over',
+    open: 'Tap the sleeve to take the record out',
+    popped: 'Drag the record to turn it · let go and it settles back',
+    deck: playingNow ? 'Now playing' : 'Paused',
+  }[state];
+  ui.hint.style.opacity = busy ? 0 : 1;
+}
+
+/* ---------- audio ---------- */
+const audio = new Audio();
+audio.preload = 'auto';
+const blobTried = new Set();
+function loadTrack(i) {
+  trackIx = i;
+  audio.src = PLAYLIST[i].src;
+  refreshUI();
+}
+audio.addEventListener('error', async () => {
+  // some hosts refuse direct media requests but allow fetch; retry through a blob
+  const t = PLAYLIST[trackIx];
+  if (blobTried.has(t.src)) return; blobTried.add(t.src);
+  try { const b = await (await fetch(t.src)).blob(); audio.src = URL.createObjectURL(b); } catch (e) { console.warn(e); }
+});
+loadTrack(0);
+function unlockAudio() {
+  // iOS only lets a page start sound inside a tap; prime the element now, play it later
+  if (audio.dataset.unlocked) return;
+  audio.dataset.unlocked = '1';
+  audio.muted = true;
+  const p = audio.play();
+  if (p) p.then(() => { audio.pause(); audio.muted = false; }).catch(() => { audio.muted = false; });
+  else { audio.pause(); audio.muted = false; }
+}
+const fmt = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+audio.addEventListener('play', refreshUI);
+audio.addEventListener('pause', refreshUI);
+audio.addEventListener('ended', () => {
+  if (state !== 'deck' || busy) return;
+  if (trackIx < PLAYLIST.length - 1) changeTrack(trackIx + 1);   // the stylus runs on into the next band
+  else stopNeedle(true);
+});
+ui.seek.addEventListener('input', () => {
+  if (audio.duration) audio.currentTime = ui.seek.value / 1000 * audio.duration;
+});
+
+/* ---------- actions ---------- */
+// as the gatefold lies flat the folded spine flattens and tucks behind the gutter
+function setSpine(k) {
+  spine.position.z = lerp(spine.userData.z0, -T - G / 2, k);
+  spine.scale.set(lerp(1, 0.4, k), 1, lerp(1, 0.6, k));
+}
+async function openSleeve() {
+  busy = true; refreshUI();
+  await settleTurn();
+  const x0 = sleeve.position.x;
+  frameFor('open');
+  await tween(1.6, k => {
+    leftHinge.rotation.y = lerp(0, -Math.PI, k);
+    sleeve.position.x = lerp(x0, S / 2, k);
+    setSpine(k);
+  });
+  state = 'open'; busy = false; refreshUI();
+}
+async function closeSleeve() {
+  if (state === 'deck') await liftToHand();
+  if (state === 'popped') await putBack();
+  busy = true; refreshUI();
+  await settleTurn();
+  frameFor('closed');
+  await tween(1.5, k => {
+    leftHinge.rotation.y = lerp(-Math.PI, 0, k);
+    sleeve.position.x = lerp(S / 2, 0, k);
+    setSpine(1 - k);
+  });
+  record.visible = false;
+  state = 'closed'; busy = false; refreshUI();
+}
+async function popRecord() {
+  busy = true; refreshUI();
+  await settleTurn();
+  placeRecordInPocket();
+  record.visible = true;
+  const p0 = pocketPos(), up = abovePocket();
+  const curve = path(
+    new THREE.LineCurve3(p0, up),                                                     // straight out of the pocket
+    new THREE.CubicBezierCurve3(up, up.clone().add(V(0, .9, 0)), POP_POS.clone().add(V(.2, .9, .9)), POP_POS),
+  );
+  const out = curve.curves[0].getLength() / curve.getLength();
+  const yAxis = V(0, 1, 0);
+  setTimeout(() => frameFor('popped'), 500);
+  // a full turn once clear of the sleeve so both sides flash by
+  await fly(curve, 2.4, k => new THREE.Quaternion().setFromAxisAngle(yAxis, ease.sine(smooth(out, 1, k)) * Math.PI * 2));
+  record.quaternion.identity(); recHeft.sync();
+  state = 'popped'; busy = false; refreshUI();
+}
+async function putBack() {
+  if (state === 'deck') await liftToHand();
+  busy = true; refreshUI();
+  recHeft.vel.set(0, 0);
+  const p0 = record.position.clone(), q0 = record.quaternion.clone();
+  const up = abovePocket(), dn = pocketPos();
+  const curve = path(
+    new THREE.CubicBezierCurve3(p0, p0.clone().add(V(.2, .9, .9)), up.clone().add(V(0, .9, 0)), up),
+    new THREE.LineCurve3(up, dn),                                                    // straight down into the pocket
+  );
+  const arrive = curve.curves[0].getLength() / curve.getLength();
+  frameFor('open');
+  // square to the sleeve well before reaching the slot
+  await fly(curve, 2.4, k => slerpQ(q0, ID, ease.sine(smooth(0, arrive * .85, k))));
+  placeRecordInPocket();
+  state = 'open'; busy = false; refreshUI();
+}
+
+/* turntable */
+async function showDeck(on) {
+  if (on) deck.visible = true;
+  const y0 = deck.position.y, y1 = on ? DECK_Y : -9;
+  await tween(on ? 1.1 : .9, k => { deck.position.y = lerp(y0, y1, k); }, on ? ease.out : ease.inOut);
+  if (!on) deck.visible = false;
+}
+async function toDeck() {
+  // from inspecting (popped) onto the platter
+  busy = true; refreshUI();
+  recHeft.vel.set(0, 0);
+  showDeck(true);
+  frameFor('deck');
+  const p0 = record.position.clone(), q0 = record.quaternion.clone(), seat = deckWorldSeat();
+  const curve = new THREE.CubicBezierCurve3(p0, p0.clone().add(V(0, .7, .6)), seat.clone().add(V(0, 1.5, 0)), seat);
+  await fly(curve, 2.2, k => slerpQ(q0, FACE_UP, ease.sine(smooth(.1, .8, k))));
+  record.quaternion.copy(FACE_UP);
+  state = 'deck';
+  deckSpin = true;
+  await dropNeedle();
+  busy = false; refreshUI();
+}
+async function dropNeedle() {
+  const target = armAngleFor(grooveRadius(trackIx, audio.duration ? audio.currentTime / audio.duration : 0));
+  const yaw0 = armYaw.rotation.y;
+  await tween(1.1, k => setArm(lerp(yaw0, target, k), ARM_UP));
+  await tween(.6, k => setArm(target, lerp(ARM_UP, 0, k)), ease.sine);
+  armDown = true;
+  if (audio.ended) audio.currentTime = 0;
+  try { await audio.play(); } catch (e) { console.warn('playback blocked', e); }
+  refreshUI();
+}
+async function stopNeedle(finished) {
+  busy = !finished || busy; refreshUI();
+  audio.pause();
+  armDown = false;
+  const yaw0 = armYaw.rotation.y;
+  await tween(.45, k => setArm(yaw0, lerp(0, ARM_UP, k)), ease.sine);
+  await tween(1.0, k => setArm(lerp(yaw0, 0, k), ARM_UP));
+  deckSpin = false;
+  if (finished) loadTrack(0);
+  refreshUI();
+}
+async function changeTrack(i) {
+  if (i < 0 || i >= PLAYLIST.length || i === trackIx && !audio.ended) return;
+  const wasPlaying = !audio.paused || audio.ended;
+  busy = true; refreshUI();
+  audio.pause();
+  loadTrack(i);
+  if (armDown) {
+    // lift, cross to the new band, set down again
+    const yaw0 = armYaw.rotation.y, yaw1 = armAngleFor(grooveRadius(i, 0));
+    armDown = false;
+    await tween(.3, k => setArm(yaw0, lerp(0, ARM_UP, k)), ease.sine);
+    await tween(.7, k => setArm(lerp(yaw0, yaw1, k), ARM_UP));
+    await tween(.4, k => setArm(yaw1, lerp(ARM_UP, 0, k)), ease.sine);
+    armDown = true;
+  }
+  if (wasPlaying) { deckSpin = true; try { await audio.play(); } catch (e) {} }
+  busy = false; refreshUI();
+}
+async function togglePlay() {
+  if (busy || state !== 'deck') return;
+  if (audio.paused) {
+    busy = true; refreshUI();
+    deckSpin = true;
+    if (!armDown) await dropNeedle();
+    else { try { await audio.play(); } catch (e) {} }
+    busy = false; refreshUI();
+  } else {
+    audio.pause();
+    deckSpin = false;
+    refreshUI();
+  }
+}
+async function liftToHand() {
+  // off the platter and back up in front of you
+  busy = true; refreshUI();
+  if (armDown || !audio.paused) await stopNeedle(false);
+  deckSpin = false;
+  await wait(.25);
+  const p0 = record.position.clone();
+  const curve = new THREE.CubicBezierCurve3(p0, p0.clone().add(V(0, 1.5, 0)), POP_POS.clone().add(V(0, .7, .6)), POP_POS);
+  frameFor('popped');
+  showDeckLater();
+  await fly(curve, 2.2, k => slerpQ(FACE_UP, ID, ease.sine(smooth(.15, .85, k))));
+  record.quaternion.identity(); recHeft.sync();
+  state = 'popped'; busy = false; refreshUI();
+}
+function showDeckLater() { setTimeout(() => showDeck(false), 900); }
+async function play() {
+  unlockAudio();
+  if (busy) return;
+  if (state === 'closed') { await openSleeve(); await popRecord(); }
+  else if (state === 'open') await popRecord();
+  if (state === 'popped') await toDeck();
+}
+
+/* ---------- hand rotation with weight ----------
+   A drag steers a target orientation; the object follows it through damping, so it
+   lags a little like a heavy record or a stiff board. Let go and it eases back home. */
+const turn = new THREE.Group();            // lets you turn the whole sleeve (and the record in it)
+scene.remove(root); turn.add(root); scene.add(turn);
+class Heft {
+  constructor(obj) { this.obj = obj; this.target = new THREE.Quaternion(); this.vel = new THREE.Vector2(); }
+  sync() { this.target.copy(this.obj.quaternion); this.vel.set(0, 0); }
+  push(dx, dy) {
+    const axis = new THREE.Vector3(dy, dx, 0), ang = axis.length() * 0.0055;
+    if (ang < 1e-7) return;
+    axis.normalize().applyQuaternion(camera.quaternion);
+    this.target.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, ang));
+  }
+  release() { this.target.identity(); this.vel.set(0, 0); }
+  step(dt, held) {
+    this.obj.quaternion.slerp(this.target, 1 - Math.exp(-dt * (held ? 6.5 : 3.2)));
+  }
+}
+const recHeft = new Heft(null), turnHeft = new Heft(turn);
+// square the sleeve up before anything moves in or out of it
+async function settleTurn() {
+  turnHeft.vel.set(0, 0);
+  if (turn.quaternion.angleTo(ID) < 1e-3) { turn.quaternion.identity(); turnHeft.sync(); return; }
+  const q0 = turn.quaternion.clone();
+  await tween(.7, k => turn.quaternion.slerpQuaternions(q0, ID, k));
+  turn.quaternion.identity(); turnHeft.sync();
+}
+
+/* ---------- pointer: click to open / pop, drag to turn things over ---------- */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let down = null;
+let dragging = null;   // the Heft being turned by hand
+
+function setNdc(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function hitRecord() { return record && record.visible && ray.intersectObject(pickRecord, false).length > 0; }
+function hitSleeve() { return ray.intersectObjects(pickSleeve, false).length > 0; }
+
+
+canvas.addEventListener('pointerdown', e => {
+  setNdc(e);
+  down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false };
+  if (busy) return;
+  if (state === 'popped' && hitRecord()) dragging = recHeft;
+  else if ((state === 'closed' || state === 'open') && hitSleeve()) dragging = turnHeft;
+  if (dragging) {
+    dragging.vel.set(0, 0);
+    controls.enabled = false;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add('dragging');
+  }
+}, { capture: true });   // run before OrbitControls so it never starts orbiting on a grab
+canvas.addEventListener('pointermove', e => {
+  if (down) {
+    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) down.moved = true;
+    if (dragging && down.moved) {
+      const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
+      dragging.push(dx, dy);
+    }
+    down.lx = e.clientX; down.ly = e.clientY;
+    return;
+  }
+  setNdc(e);
+  const clickable = !busy && (state === 'closed' || state === 'open') && hitSleeve();
+  canvas.classList.toggle('pointer', clickable);
+});
+function endPointer(e) {
+  if (!down) return;
+  const wasClick = !down.moved;
+  if (dragging) {
+    dragging.release();
+    dragging = null;
+    controls.enabled = true;
+    canvas.classList.remove('dragging');
+  }
+  down = null;
+  if (wasClick && !busy && e.type === 'pointerup') {
+    setNdc(e);
+    if (state === 'closed' && hitSleeve()) openSleeve().then(popRecord);
+    else if (state === 'open' && hitSleeve()) popRecord();
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+ui.play.onclick = play;
+ui.pop.onclick = () => !busy && state === 'open' && popRecord();
+ui.back.onclick = () => !busy && (state === 'popped' || state === 'deck') && putBack();
+ui.close.onclick = () => !busy && state !== 'closed' && closeSleeve();
+ui.npToggle.onclick = () => { unlockAudio(); togglePlay(); };
+ui.lift.onclick = () => !busy && state === 'deck' && liftToHand();
+ui.npPrev.onclick = () => !busy && state === 'deck' && changeTrack(trackIx - 1);
+ui.npNext.onclick = () => !busy && state === 'deck' && changeTrack(trackIx + 1);
+
+/* ---------- loop ---------- */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+const clock = new THREE.Clock();
+let curSpin = 0, lastUi = 0;
+function loop(now) {
+  frameNow = now;
+  const dt = Math.min(clock.getDelta(), 0.05);
+  stepTweens(now);
+  if (record) {
+    let want = 0;
+    if (state === 'deck' && deckSpin) want = RPM33;
+    // a real platter takes about a second to reach speed
+    curSpin = lerp(curSpin, want, 1 - Math.exp(-dt * (state === 'deck' ? 2.2 : 3)));
+    recordSpin.rotation.z -= curSpin * dt;
+    if (state === 'deck' || deck.visible) platter.rotation.y -= (state === 'deck' ? curSpin : 0) * dt;
+    if (state === 'popped' && !busy) recHeft.step(dt, dragging === recHeft);
+    if ((state === 'closed' || state === 'open') && !busy) turnHeft.step(dt, dragging === turnHeft);
+    // the stylus tracks inward with the song
+    if (armDown && !busy && audio.duration) {
+      setArm(armAngleFor(grooveRadius(trackIx, audio.currentTime / audio.duration)), 0);
+    }
+    if (state === 'deck' && now - lastUi > 200) {
+      lastUi = now;
+      const d = audio.duration || 0, c = audio.currentTime || 0;
+      if (document.activeElement !== ui.seek) ui.seek.value = d ? Math.round(c / d * 1000) : 0;
+      ui.seek.style.setProperty('--p', (ui.seek.value / 10) + '%');
+      ui.tCur.textContent = fmt(c); ui.tRem.textContent = '-' + fmt(d - c);
+    }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+build().then(() => {
+  refreshUI();
+  const l = document.getElementById('loading'); l.style.opacity = 0;
+  requestAnimationFrame(loop);
+}).catch(err => {
+  document.getElementById('loading').textContent = 'Couldn’t load the scene: ' + err;
+  console.error(err);
+});
+refreshUI();
+</script>
+</body>
+</html>
