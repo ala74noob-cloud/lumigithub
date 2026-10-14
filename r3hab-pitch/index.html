@@ -1180,6 +1180,7 @@ async function deliver(blob,filename){
   const a=h('a',{href:URL.createObjectURL(blob),download:filename});document.body.append(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);status('已下载 '+filename);
 }
+async function loadAny(urls){for(const u of urls){try{await loadScript(u);return;}catch(e){}}throw new Error('PPT 组件没有加载成功');}
 function loadScript(src){return new Promise((res,rej)=>{const s=h('script',{src});s.onload=res;s.onerror=()=>rej(new Error(src));document.head.append(s);});}
 /* render a slide with the browser's own engine (SVG foreignObject) so the PDF matches the screen */
 let FO_OK=null;
@@ -1239,7 +1240,8 @@ async function exportPptx(){
   try{
     await setMode(false);
     status('正在准备 PPTX…');
-    if(!window.PptxGenJS)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js');
+    if(!window.PptxGenJS)await loadAny(['https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js']);
+    if(!window.PptxGenJS)throw new Error('PPT 组件没有加载成功');
     const pptx=new window.PptxGenJS();
     pptx.defineLayout({name:'WIDE169',width:13.333,height:7.5});pptx.layout='WIDE169';
     pptx.title='R3HAB × 徐明浩 单曲合作提案';pptx.company='GREENROOM.AGENCY';
@@ -1257,7 +1259,7 @@ async function exportPptx(){
     }
     const blob=await pptx.write({outputType:'blob'});
     await deliver(blob,'R3HAB_x_徐明浩_合作提案_'+stamp()+'.pptx');
-  }catch(e){status('PPTX 生成失败：请稍后再试，或先导出 PDF');}
+  }catch(e){status('PPTX 生成失败（'+((e&&e.message)||e&&e.code||'未知原因').toString().slice(0,60)+'），请稍后再试，或先导出 PDF');console.error(e);}
   finally{b.disabled=false;if(wasEdit)setMode(true);}
 }
 $('bPptx').onclick=exportPptx;
