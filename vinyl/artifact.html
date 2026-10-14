@@ -79,7 +79,7 @@ const LABEL_R = 0.5;
 
 /* ---------- renderer / scene ---------- */
 const canvas = document.getElementById('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -88,6 +88,17 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
+{
+  // backdrop lives in the scene (not CSS) so the clear plastic can refract it
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const g = c.getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+  const gr = g.createRadialGradient(256, 150, 0, 256, 220, 420);
+  gr.addColorStop(0, css.getPropertyValue('--bg-1').trim()); gr.addColorStop(0.7, css.getPropertyValue('--bg-2').trim());
+  g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+  scene.background = new THREE.CanvasTexture(c);
+  scene.background.colorSpace = THREE.SRGBColorSpace;
+}
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
@@ -156,16 +167,137 @@ function addGrain(ctx, w, h, amt) {
   ctx.putImageData(d, 0, 0);
 }
 
-// back cover: flat sampled blue with paper grain
-function makeBackCover() {
-  const c = document.createElement('canvas'); c.width = c.height = 512;
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// height field (0..1 floats) → tangent-space normal map
+function heightToNormal(h, size, k, wrap) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'), out = g.createImageData(size, size);
+  const at = (x, y) => wrap
+    ? h[((y + size) % size) * size + ((x + size) % size)]
+    : h[Math.min(size - 1, Math.max(0, y)) * size + Math.min(size - 1, Math.max(0, x))];
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const dx = (at(x + 1, y) - at(x - 1, y)) * k, dy = (at(x, y + 1) - at(x, y - 1)) * k;
+    const l = Math.hypot(dx, dy, 1), i = (y * size + x) * 4;
+    out.data[i] = (-dx / l * .5 + .5) * 255;
+    out.data[i + 1] = (dy / l * .5 + .5) * 255;
+    out.data[i + 2] = (1 / l * .5 + .5) * 255;
+    out.data[i + 3] = 255;
+  }
+  g.putImageData(out, 0, 0);
+  return c;
+}
+function readHeight(g, size, jitter) {
+  const d = g.getImageData(0, 0, size, size).data, h = new Float32Array(size * size);
+  for (let i = 0; i < h.length; i++) h[i] = d[i * 4] / 255 + (Math.random() - .5) * jitter;
+  return h;
+}
+
+// tiling uncoated card stock: cloudy formation + short fibres + tooth
+function makePaperMaps(size = 512) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
   const g = c.getContext('2d');
-  g.fillStyle = BLUE; g.fillRect(0, 0, 512, 512);
-  const v = g.createRadialGradient(256, 200, 40, 256, 256, 420);
-  v.addColorStop(0, 'rgba(255,255,255,.06)'); v.addColorStop(1, 'rgba(0,0,0,.18)');
-  g.fillStyle = v; g.fillRect(0, 0, 512, 512);
-  addGrain(g, 512, 512, 22);
+  g.fillStyle = '#808080'; g.fillRect(0, 0, size, size);
+  const tiles = [-size, 0, size];
+  for (let i = 0; i < 220; i++) {
+    const x = Math.random() * size, y = Math.random() * size, r = 10 + Math.random() * 46;
+    const v = Math.random() < .5 ? 0 : 255;
+    for (const ox of tiles) for (const oy of tiles) {
+      const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+      gr.addColorStop(0, `rgba(${v},${v},${v},.07)`); gr.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      g.fillStyle = gr; g.fillRect(x + ox - r, y + oy - r, 2 * r, 2 * r);
+    }
+  }
+  g.lineCap = 'round';
+  for (let i = 0; i < 3200; i++) {
+    const x = Math.random() * size, y = Math.random() * size, len = 3 + Math.random() * 16, a = Math.random() * Math.PI * 2;
+    const v = Math.random() < .55 ? 255 : 0, bend = (Math.random() - .5) * 6;
+    g.strokeStyle = `rgba(${v},${v},${v},${.07 + Math.random() * .12})`;
+    g.lineWidth = .5 + Math.random() * .9;
+    for (const ox of tiles) for (const oy of tiles) {
+      const X = x + ox, Y = y + oy;
+      if (X < -20 || X > size + 20 || Y < -20 || Y > size + 20) continue;
+      g.beginPath(); g.moveTo(X, Y);
+      g.quadraticCurveTo(X + Math.cos(a) * len / 2 - Math.sin(a) * bend, Y + Math.sin(a) * len / 2 + Math.cos(a) * bend,
+                         X + Math.cos(a) * len, Y + Math.sin(a) * len);
+      g.stroke();
+    }
+  }
+  const h = readHeight(g, size, .08);
+  const rc = document.createElement('canvas'); rc.width = rc.height = size;
+  const rg = rc.getContext('2d'), rd = rg.createImageData(size, size);
+  for (let i = 0; i < h.length; i++) {
+    const v = 225 + (h[i] - .5) * 90;
+    rd.data[i * 4] = rd.data[i * 4 + 1] = rd.data[i * 4 + 2] = v; rd.data[i * 4 + 3] = 255;
+  }
+  rg.putImageData(rd, 0, 0);
+  const normal = canvasTex(heightToNormal(h, size, 2.2, true), false);
+  const rough = canvasTex(rc, false);
+  for (const t of [normal, rough]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 4); }
+  return { normal, rough };
+}
+
+// print a board face: artwork or flat ink, then handling wear (scuffed edges,
+// whitened corners) and optional ring wear where the record presses through
+function printFace({ img, sx = 0, sy = 0, sw, sh, color, ring = 0, size = 1024 }) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  if (img) g.drawImage(img, sx, sy, sw ?? img.width, sh ?? img.height, 0, 0, size, size);
+  else {
+    g.fillStyle = color; g.fillRect(0, 0, size, size);
+    const v = g.createRadialGradient(size / 2, size * .4, size * .08, size / 2, size / 2, size * .8);
+    v.addColorStop(0, 'rgba(255,255,255,.05)'); v.addColorStop(1, 'rgba(0,0,0,.16)');
+    g.fillStyle = v; g.fillRect(0, 0, size, size);
+    addGrain(g, size, size, 18);
+  }
+  g.globalCompositeOperation = 'screen';
+  if (ring) {
+    const rr = (R / S) * size * 0.99, m = size / 2;
+    g.lineCap = 'round';
+    for (let i = 0; i < 260; i++) {
+      const a0 = Math.random() * Math.PI * 2, a1 = a0 + .04 + Math.random() * .35;
+      g.strokeStyle = `rgba(255,255,255,${ring * (.3 + Math.random() * .7)})`;
+      g.lineWidth = 2 + Math.random() * 12;
+      g.beginPath(); g.arc(m, m, rr + (Math.random() - .5) * 10, a0, a1); g.stroke();
+    }
+  }
+  for (let side = 0; side < 4; side++) for (let i = 0; i < 260; i++) {
+    const t = Math.random() * size, w = .8 + Math.random() * (Math.random() < .08 ? 5 : 2), l = 2 + Math.random() * 18;
+    g.fillStyle = `rgba(255,255,255,${.08 + Math.random() * .3})`;
+    if (side === 0) g.fillRect(t, 0, l, w);
+    else if (side === 1) g.fillRect(t, size - w, l, w);
+    else if (side === 2) g.fillRect(0, t, w, l);
+    else g.fillRect(size - w, t, w, l);
+  }
+  for (const [x, y] of [[0, 0], [size, 0], [0, size], [size, size]]) {
+    const cr = 18 + Math.random() * 22;
+    const gr = g.createRadialGradient(x, y, 0, x, y, cr);
+    gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(x - cr, y - cr, 2 * cr, 2 * cr);
+  }
+  g.globalCompositeOperation = 'source-over';
   return canvasTex(c);
+}
+
+// polythene outer sleeve: long stretch streaks and a few soft creases
+function makeCrinkleNormal(size = 512) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#808080'; g.fillRect(0, 0, size, size);
+  g.lineCap = 'round';
+  for (let i = 0; i < 90; i++) {
+    const x = Math.random() * size, y = Math.random() * size;
+    const a = Math.PI / 2 + (Math.random() - .5) * .9, len = 60 + Math.random() * 260;
+    const v = Math.random() < .5 ? 0 : 255;
+    for (let w = 7; w >= 1; w -= 2) {
+      g.strokeStyle = `rgba(${v},${v},${v},${.035 + Math.random() * .03})`; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x, y);
+      g.quadraticCurveTo(x + Math.cos(a) * len / 2 + (Math.random() - .5) * 30, y + Math.sin(a) * len / 2,
+                         x + Math.cos(a) * len, y + Math.sin(a) * len);
+      g.stroke();
+    }
+  }
+  return canvasTex(heightToNormal(readHeight(g, size, .01), size, 3.0, false), false);
 }
 
 /* record face: colour map, plus roughness / clearcoat maps so the
@@ -233,46 +365,76 @@ root.add(sleeve);
 let leftHinge, record, recordSpin, pickRecord;
 const pickSleeve = [];
 
+/* board shape: every board shares the same faint dish, and the faces nearest the
+   record pillow outwards over it, so the jacket reads as card with something inside */
+const WARP = 0.006;
+const pillow = (x, y) => 1 - smooth(R - 0.32, R + 0.06, Math.hypot(x, y));
+const curl = (x, y) => WARP * ((x / S) ** 2 + 0.6 * (y / S) ** 2);
+const FRONT_BULGE = 0.004, INNER_BULGE = 0.002, BACK_BULGE = 0.007;
+function boardGeo(d, { front = 0, back = 0 } = {}) {
+  const geo = new THREE.BoxGeometry(S, S, d, 48, 48, 1);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    p.setZ(i, z + curl(x, y) + (z > 0 ? front : -back) * pillow(x, y));
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+let spine, plastic;
+const plasticMats = [];
 async function build() {
-  const [coverTex, spreadTex, labelImg] = await Promise.all([
-    loadTex(IMG.cover), loadTex(IMG.spread), loadImg(IMG.label),
+  const [coverImg, spreadImg, labelImg] = await Promise.all([
+    loadImg(IMG.cover), loadImg(IMG.spread), loadImg(IMG.label),
   ]);
-  const spreadL = spreadTex;              spreadL.repeat.set(0.5, 1); spreadL.offset.set(0, 0);
-  const spreadR = spreadTex.clone();      spreadR.repeat.set(0.5, 1); spreadR.offset.set(0.5, 0); spreadR.needsUpdate = true;
+  const half = spreadImg.width / 2;
+  const coverTex = printFace({ img: coverImg, ring: 0.012 });
+  const spreadL = printFace({ img: spreadImg, sx: 0, sw: half, sh: spreadImg.height });
+  const spreadR = printFace({ img: spreadImg, sx: half, sw: half, sh: spreadImg.height });
+  const backTex = printFace({ color: BLUE, ring: 0.035 });
 
-  const paper = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0 });
-  const edge  = paper('#e7e3db');
-  const edgeB = paper(BLUE);
-  const printed = map => new THREE.MeshStandardMaterial({ map, roughness: 0.62, metalness: 0 });
-  const box = (w, h, d, mats) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
-    m.castShadow = true; m.receiveShadow = true; return m;
-  };
+  const pm = makePaperMaps();
+  const card = (opts) => new THREE.MeshPhysicalMaterial({
+    roughness: 1, roughnessMap: pm.rough, normalMap: pm.normal, normalScale: new THREE.Vector2(0.6, 0.6),
+    sheen: 0.12, sheenRoughness: 0.9, sheenColor: new THREE.Color('#ffffff'), metalness: 0, ...opts,
+  });
+  const edge  = card({ color: '#ebe5d8', normalScale: new THREE.Vector2(1.2, 1.2) });  // raw board core
+  const edgeB = card({ color: BLUE });
+  const printed = map => card({ map });
+  const mesh = (geo, mats) => { const m = new THREE.Mesh(geo, mats); m.castShadow = true; m.receiveShadow = true; return m; };
 
-  // right panel: inner board (spread right half) + back board (blue) with a pocket between
+  // right panel: inner board (spread right half) + back board (blue) with the record pocket between
   const right = new THREE.Group();
   sleeve.add(right);
-  const inner = box(S, S, T, [edge, edge, edge, edge, printed(spreadR), edge]);
+  const inner = mesh(boardGeo(T, { front: INNER_BULGE }), [edge, edge, edge, edge, printed(spreadR), edge]);
   inner.position.z = -T / 2;
-  const back = box(S, S, T, [edgeB, edgeB, edgeB, edgeB, edgeB, printed(makeBackCover())]);
+  const back = mesh(boardGeo(T, { back: BACK_BULGE }), [edgeB, edgeB, edgeB, edgeB, edgeB, printed(backTex)]);
   back.position.z = -T - G - T / 2;
   right.add(inner, back);
-  // pocket walls: spine, outer edge, bottom (top stays open for the record)
+  // pocket walls: outer edge and bottom (top stays open for the record)
   const wallD = G + 0.001, wz = -T - G / 2;
-  const spine = box(T, S, wallD + 2 * T, edgeB); spine.position.set(-S / 2 - T / 2, 0, wz);
-  const wR = box(0.01, S, wallD, edgeB);         wR.position.set(S / 2 - 0.005, 0, wz);
-  const wB = box(S, 0.01, wallD, edgeB);         wB.position.set(0, -S / 2 + 0.005, wz);
-  right.add(spine, wR, wB);
+  const wR = mesh(new THREE.BoxGeometry(0.01, S, wallD), edgeB); wR.position.set(S / 2 - 0.005, 0, wz);
+  const wB = mesh(new THREE.BoxGeometry(S, 0.01, wallD), edgeB); wB.position.set(0, -S / 2 + 0.005, wz);
+  right.add(wR, wB);
+
+  // rounded spine: a folded card hinge wrapping the whole stack
+  const SPINE_R = (3 * T + G) / 2 + 0.002;
+  spine = mesh(new THREE.CylinderGeometry(SPINE_R, SPINE_R, S, 28, 1, true, Math.PI, Math.PI), edgeB);
+  spine.position.set(-S / 2, 0, (T - 2 * T - G) / 2);
+  spine.userData.z0 = spine.position.z;
+  sleeve.add(spine);
 
   // left panel (front cover) hinged at the spine
   leftHinge = new THREE.Group();
   leftHinge.position.set(-S / 2, 0, 0);
   sleeve.add(leftHinge);
-  const front = box(S, S, T, [edge, edge, edge, edge, printed(coverTex), printed(spreadL)]);
+  const front = mesh(boardGeo(T, { front: FRONT_BULGE }), [edge, edge, edge, edge, printed(coverTex), printed(spreadL)]);
   front.position.set(S / 2, 0, T / 2 + 0.0005);
   leftHinge.add(front);
 
   pickSleeve.push(inner, back, front, spine, wR, wB);
+  buildPlastic();
 
   // record
   record = new THREE.Group();
@@ -308,6 +470,73 @@ async function build() {
   frameFor('closed', true);
 }
 
+/* clear polythene outer sleeve: a little wider and taller than the jacket,
+   open at the top with a loose flared lip, creased and stretched */
+function buildPlastic() {
+  plastic = new THREE.Group();
+  sleeve.add(plastic);
+  const PW = S / 2 + 0.035, PB = -S / 2 - 0.03, PT = S / 2 + 0.17;
+  const zF = T + 0.0005 + 0.006, zB = -2 * T - G - 0.006;
+  const clampX = x => Math.max(-S / 2, Math.min(S / 2, x)), clampY = y => Math.max(-S / 2, Math.min(S / 2, y));
+  const base = (x, y) => curl(clampX(x), clampY(y));
+  // fixed creases so the sleeve looks the same every visit
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const creases = Array.from({ length: 9 }, () => {
+    const a = Math.PI / 2 + (rnd() - .5) * 1.4;
+    return { nx: Math.cos(a), ny: Math.sin(a), c: (rnd() - .5) * S, amp: .002 + rnd() * .005, w: .03 + rnd() * .12 };
+  });
+  const wrinkle = (x, y) => {
+    let v = 0;
+    for (const k of creases) { const d = x * k.ny - y * k.nx - k.c; v += k.amp * Math.exp(-((d / k.w) ** 2)); }
+    v += .0015 * (1 + Math.sin(x * 3.1 + y * 1.7)) * (1 + Math.sin(y * 2.3 - x * .9));
+    return v * smooth(0, .15, PW - Math.abs(x)) * smooth(0, .15, y - PB);
+  };
+  const lip = y => .03 * smooth(S / 2 - .02, PT, y) ** 2;
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, metalness: 0, roughness: 0.035,
+    transmission: 1, thickness: 0.004, ior: 1.5,
+    normalMap: makeCrinkleNormal(), normalScale: new THREE.Vector2(0.6, 0.6),
+    specularIntensity: 0.8,
+    transparent: true, opacity: 1, side: THREE.DoubleSide, depthWrite: false,
+    envMapIntensity: 0.9,
+  });
+  plasticMats.push(mat);
+
+  const sheet = (sign) => {
+    const geo = new THREE.PlaneGeometry(2 * PW, PT - PB, 96, 96);
+    geo.translate(0, (PT + PB) / 2, 0);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i);
+      const bulge = sign > 0 ? FRONT_BULGE * pillow(x, y) : -BACK_BULGE * pillow(x, y);
+      p.setZ(i, (sign > 0 ? zF : zB) + base(x, y) + bulge + sign * (wrinkle(x, y) + lip(y)));
+    }
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, mat);
+  };
+  // side and bottom folds: half tubes joining front and back sheets
+  const rad = (zF - zB) / 2, zc = (zF + zB) / 2;
+  const tube = (len, thetaStart) => new THREE.CylinderGeometry(rad, rad, len, 16, 48, true, thetaStart, Math.PI);
+  const bend = (geo, f) => { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) f(p, i); geo.computeVertexNormals(); return geo; };
+  const sideGeo = (sx) => bend(tube(PT - PB - 0.002, sx > 0 ? 0 : Math.PI), (p, i) => {
+    const y = p.getY(i) + (PT + PB) / 2;
+    p.setY(i, y); p.setX(i, p.getX(i) + sx * PW); p.setZ(i, p.getZ(i) + zc + base(sx * PW, y));
+  });
+  const botGeo = bend(tube(2 * PW, Math.PI), (p, i) => {
+    // cylinder axis is y; lay it along x with the rounded half facing down
+    const ax = p.getY(i), ox = p.getX(i), oz = p.getZ(i);
+    p.setXYZ(i, ax, PB + ox, oz + zc + base(ax, PB));
+  });
+  plastic.add(sheet(1), sheet(-1), new THREE.Mesh(sideGeo(1), mat), new THREE.Mesh(sideGeo(-1), mat), new THREE.Mesh(botGeo, mat));
+  plastic.traverse(o => { if (o.isMesh) { o.renderOrder = 2; pickSleeve.push(o); } });
+}
+function setPlastic(k) {   // 0 = on the jacket, 1 = slid off and gone
+  plastic.position.y = -k * (S * 2.2);
+  plasticMats.forEach(m => { m.opacity = 1 - smooth(.35, 1, k); });
+  plastic.visible = k < 1;
+}
+
 /* ---------- state ---------- */
 let state = 'closed';   // closed | open | popped
 let busy = false;
@@ -329,7 +558,7 @@ function refreshUI() {
   ui.spin.textContent = spinning ? '暂停转动' : '继续转动';
   [ui.pop, ui.back, ui.close, ui.spin].forEach(b => b.disabled = busy);
   ui.hint.textContent = {
-    closed: '点击封套 · 打开',
+    closed: '点击封套 · 拆开外袋并打开',
     open: '点击封套 · 取出唱片',
     popped: '拖动唱片 · 360° 旋转检视　拖动空白处 · 环绕视角',
   }[state];
@@ -382,13 +611,20 @@ function placeRecordInPocket() {
 }
 
 /* ---------- actions ---------- */
+// as the gatefold lies flat the folded spine flattens and tucks behind the gutter
+function setSpine(k) {
+  spine.position.z = lerp(spine.userData.z0, -T - G / 2, k);
+  spine.scale.set(lerp(1, 0.4, k), 1, lerp(1, 0.6, k));
+}
 async function openSleeve() {
   busy = true; refreshUI();
   const x0 = sleeve.position.x;
+  await tween(1.0, k => setPlastic(k), ease.inOut);
   frameFor('open');
   await tween(1.6, k => {
     leftHinge.rotation.y = lerp(0, -Math.PI, k);
     sleeve.position.x = lerp(x0, S / 2, k);
+    setSpine(k);
   });
   state = 'open'; busy = false; refreshUI();
 }
@@ -399,8 +635,10 @@ async function closeSleeve() {
   await tween(1.5, k => {
     leftHinge.rotation.y = lerp(-Math.PI, 0, k);
     sleeve.position.x = lerp(S / 2, 0, k);
+    setSpine(1 - k);
   });
   record.visible = false;
+  await tween(1.0, k => setPlastic(1 - k), ease.inOut);
   state = 'closed'; busy = false; refreshUI();
 }
 async function popRecord() {
