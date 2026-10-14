@@ -127,7 +127,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--solid);outline-
     <button id="btnLift" hidden><svg viewBox="0 0 24 24"><path d="M12 4.5l7.5 8.5h-15zM4.5 16h15v3h-15z"/></svg>Lift</button>
     <button id="btnBack" hidden>Put Back</button>
     <button id="btnClose" hidden>Close<span class="lbl-long">Sleeve</span></button>
-    <button id="btnView">Reset<span class="lbl-long">View</span></button>
   </nav>
 </div>
 
@@ -151,10 +150,10 @@ const IMG = {
 // Side A, outermost groove first
 const PLAYLIST = [
   { title: '时间有什么好追的', src: 'tracks/01.mp3', dur: 260.3 },
-  { title: 'Track 2', src: 'tracks/02.mp3', dur: 237.7 },
-  { title: 'Track 3', src: 'tracks/03.mp3', dur: 262.9 },
+  { title: '苹果树下', src: 'tracks/02.mp3', dur: 237.7 },
+  { title: '我想我们也会被忘记', src: 'tracks/03.mp3', dur: 262.9 },
   { title: '我想念海，她依旧是我的夏天 II', src: 'tracks/04.mp3', dur: 231.0 },
-  { title: 'Track 5', src: 'tracks/05.mp3', dur: 264.8 },
+  { title: '小溪', src: 'tracks/05.mp3', dur: 264.8 },
 ];
 const BLUE = '#126698';          // sampled from the sky in the cover photo
 
@@ -204,6 +203,13 @@ controls.dampingFactor = 0.08;
 controls.enablePan = false;
 controls.minDistance = 2.0;
 controls.maxDistance = 18;
+let homeTimer = 0;
+let camEpoch = 0;   // bumping it lets a hand on the camera interrupt a framing move
+controls.addEventListener('start', () => { clearTimeout(homeTimer); camEpoch++; });
+controls.addEventListener('end', () => {
+  clearTimeout(homeTimer);
+  homeTimer = setTimeout(() => { if (!busy) frameFor(state); }, 450);
+});
 
 scene.add(new THREE.HemisphereLight(0xdfeeff, 0x1a2430, 0.5));
 const key = new THREE.DirectionalLight(0xfff4e6, 1.6);
@@ -770,8 +776,11 @@ function frameFor(which, instant = false) {
   else { target = POP_POS.clone(); dist = fitDistance(2 * R, 2 * R) * 1.25; dir = new THREE.Vector3(0.18, 0.12, 1); }
   const to = target.clone().add(dir.normalize().multiplyScalar(dist));
   if (instant) { controls.target.copy(target); camera.position.copy(to); controls.update(); return Promise.resolve(); }
-  const p0 = camera.position.clone(), t0 = controls.target.clone();
-  return tween(1.4, k => { camera.position.lerpVectors(p0, to, k); controls.target.lerpVectors(t0, target, k); });
+  const p0 = camera.position.clone(), t0 = controls.target.clone(), epoch = ++camEpoch;
+  return tween(1.4, k => {
+    if (epoch !== camEpoch) return;
+    camera.position.lerpVectors(p0, to, k); controls.target.lerpVectors(t0, target, k);
+  });
 }
 
 /* ---------- record paths ----------
@@ -807,7 +816,6 @@ const ui = {
   lift: document.getElementById('btnLift'),
   back: document.getElementById('btnBack'),
   close: document.getElementById('btnClose'),
-  view: document.getElementById('btnView'),
   np: document.getElementById('np'),
   npToggle: document.getElementById('npToggle'),
   npIcon: document.getElementById('npIcon'),
@@ -836,10 +844,10 @@ function refreshUI() {
   ui.npIcon.setAttribute('d', playingNow ? ICON_PAUSE : ICON_PLAY);
   ui.npToggle.setAttribute('aria-label', playingNow ? 'Pause' : 'Play');
   ui.hint.textContent = busy ? ' ' : {
-    closed: 'Tap the sleeve to open it · drag to turn it',
-    open: 'Tap the sleeve to take the record out · drag to turn it',
-    popped: 'Drag the record to turn it · drag elsewhere to orbit',
-    deck: playingNow ? 'Now playing · drag to orbit' : 'Paused',
+    closed: 'Tap the sleeve to open it · drag to turn it over',
+    open: 'Tap the sleeve to take the record out',
+    popped: 'Drag the record to turn it · let go and it settles back',
+    deck: playingNow ? 'Now playing' : 'Paused',
   }[state];
   ui.hint.style.opacity = busy ? 0 : 1;
 }
@@ -1049,7 +1057,7 @@ async function play() {
 
 /* ---------- hand rotation with weight ----------
    A drag steers a target orientation; the object follows it through damping, so it
-   lags a little, settles, and carries momentum like a heavy record or a stiff board. */
+   lags a little like a heavy record or a stiff board. Let go and it eases back home. */
 const turn = new THREE.Group();            // lets you turn the whole sleeve (and the record in it)
 scene.remove(root); turn.add(root); scene.add(turn);
 class Heft {
@@ -1061,12 +1069,9 @@ class Heft {
     axis.normalize().applyQuaternion(camera.quaternion);
     this.target.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, ang));
   }
+  release() { this.target.identity(); this.vel.set(0, 0); }
   step(dt, held) {
-    if (!held && this.vel.lengthSq() > 1e-3) {
-      this.push(this.vel.x * dt * 60, this.vel.y * dt * 60);
-      this.vel.multiplyScalar(Math.exp(-dt * 4.5));
-    }
-    this.obj.quaternion.slerp(this.target, 1 - Math.exp(-dt * 6.5));
+    this.obj.quaternion.slerp(this.target, 1 - Math.exp(-dt * (held ? 6.5 : 3.2)));
   }
 }
 const recHeft = new Heft(null), turnHeft = new Heft(turn);
@@ -1084,7 +1089,6 @@ const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 let down = null;
 let dragging = null;   // the Heft being turned by hand
-let lastMove = 0;
 
 function setNdc(e) {
   const r = canvas.getBoundingClientRect();
@@ -1114,9 +1118,6 @@ canvas.addEventListener('pointermove', e => {
     if (dragging && down.moved) {
       const dx = e.clientX - down.lx, dy = e.clientY - down.ly;
       dragging.push(dx, dy);
-      const now = performance.now(), dt = Math.max(8, now - lastMove);
-      dragging.vel.set(dx / dt * 16, dy / dt * 16);
-      lastMove = now;
     }
     down.lx = e.clientX; down.ly = e.clientY;
     return;
@@ -1129,7 +1130,7 @@ function endPointer(e) {
   if (!down) return;
   const wasClick = !down.moved;
   if (dragging) {
-    if (performance.now() - lastMove > 80) dragging.vel.set(0, 0);
+    dragging.release();
     dragging = null;
     controls.enabled = true;
     canvas.classList.remove('dragging');
@@ -1152,10 +1153,6 @@ ui.npToggle.onclick = () => { unlockAudio(); togglePlay(); };
 ui.lift.onclick = () => !busy && state === 'deck' && liftToHand();
 ui.npPrev.onclick = () => !busy && state === 'deck' && changeTrack(trackIx - 1);
 ui.npNext.onclick = () => !busy && state === 'deck' && changeTrack(trackIx + 1);
-ui.view.onclick = () => {
-  if (!busy) { recHeft.target.identity(); recHeft.vel.set(0, 0); turnHeft.target.identity(); turnHeft.vel.set(0, 0); }
-  frameFor(state);
-};
 
 /* ---------- loop ---------- */
 function resize() {
