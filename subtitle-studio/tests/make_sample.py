@@ -30,7 +30,7 @@ def _font(size):
     return ImageFont.load_default(size)
 
 
-def frame(i: int) -> bytes:
+def frame(i: int, cues=CUES, logo=LOGO) -> bytes:
     t = i / FPS
     y = np.linspace(0, 1, H)[:, None]
     x = np.linspace(0, 1, W)[None, :]
@@ -39,15 +39,16 @@ def frame(i: int) -> bytes:
     b = 90 + 40 * np.cos(2 * np.pi * (y + t * 0.2)) * np.ones_like(x)
     img = Image.fromarray(np.dstack([r, g, b]).clip(0, 255).astype(np.uint8))
     d = ImageDraw.Draw(img)
-    d.text((24, 24), LOGO, font=_font(28), fill=(255, 255, 255))
-    for s, e, text in CUES:
+    if logo:
+        d.text((24, 24), logo, font=_font(28), fill=(255, 255, 255))
+    for s, e, text in cues:
         if s <= i < e:
             d.multiline_text((W // 2, 400), text, font=_font(40), fill=(255, 255, 255), anchor="ma",
                              align="center", stroke_width=2, stroke_fill=(0, 0, 0), spacing=8)
     return img.tobytes()
 
 
-def main(out: str):
+def main(out: str, cues=CUES, logo=LOGO):
     n = int(DUR * FPS)
     p = subprocess.Popen([
         "ffmpeg", "-y", "-loglevel", "error",
@@ -56,7 +57,7 @@ def main(out: str):
         "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", out,
     ], stdin=subprocess.PIPE)
     for i in range(n):
-        p.stdin.write(frame(i))
+        p.stdin.write(frame(i, cues, logo))
     p.stdin.close()
     if p.wait() != 0:
         raise SystemExit("ffmpeg failed")

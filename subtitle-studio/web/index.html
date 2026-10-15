@@ -55,7 +55,9 @@
   <h1>字幕工作室</h1>
   <select id="projSel"><option value="">— 选择项目 —</option></select>
   <label><button onclick="fileIn.click()">上传视频</button><input id="fileIn" type="file" accept="video/*" hidden></label>
-  <button id="btnDetect" disabled>识别字幕</button>
+  <button id="btnDetect" disabled>识别画面字幕</button>
+  <button id="btnSpeech" disabled title="视频里没有烧录字幕时，用语音生成">语音转写</button>
+  <label class="note" title="演出现场等背景音乐很响时勾选（需安装 demucs）"><input type="checkbox" id="vocalsChk"> 人声分离</label>
   <button id="btnTranslate" disabled>自动翻译</button>
   <button id="btnExport" class="primary" disabled>导出视频</button>
   <button id="btnUndo" disabled title="Ctrl+Z">撤销</button>
@@ -78,6 +80,7 @@
       <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap">
         <button id="btnSrt" disabled>下载 SRT</button>
         <button id="btnMd" disabled>下载台词表 Markdown</button>
+        <button id="btnSrtIn" disabled>导入 SRT</button><input id="srtIn" type="file" accept=".srt" hidden>
         <button id="btnClean" disabled>清理缓存</button>
       </div>
     </div>
@@ -131,7 +134,7 @@ async function openProject(n) {
   $("#stage").style.aspectRatio = `${P.video.width}/${P.video.height}`;
   $("#desc").value = P.description || "";
   $("#gloss").value = Object.entries(P.glossary || {}).map(([k, v]) => `${k}=${v}`).join("\n");
-  ["#btnDetect","#btnTranslate","#btnExport","#btnSrt","#btnMd","#btnClean"].forEach(s => $(s).disabled = false);
+  ["#btnDetect","#btnSpeech","#btnTranslate","#btnExport","#btnSrt","#btnMd","#btnSrtIn","#btnClean"].forEach(s => $(s).disabled = false);
   renderRows(); loadExports(); refreshList();
   for (const j of r.jobs) watchJob(j);
 }
@@ -310,7 +313,7 @@ const watching = new Set();
 async function watchJob(job) {
   if (watching.has(job.id)) return;
   watching.add(job.id);
-  const busy = ["#btnDetect", "#btnTranslate", "#btnExport"];
+  const busy = ["#btnDetect", "#btnSpeech", "#btnTranslate", "#btnExport"];
   busy.forEach(s => $(s).disabled = true);
   while (true) {
     const j = await api(`/api/jobs/${job.id}`);
@@ -320,12 +323,30 @@ async function watchJob(job) {
       busy.forEach(s => $(s).disabled = false);
       if (j.status === "error") { setJob(0, "出错：" + j.error); return; }
       if (j.kind === "export") { showExport(j.result); setJob(1, "导出完成"); }
-      else { const r = await api(`/api/projects/${encodeURIComponent(name)}`); undoStack.push(JSON.stringify(P)); P = r.project; previews.clear(); renderRows(); $("#btnUndo").disabled = false; setJob(1, j.kind === "detect" ? `识别到 ${j.result.count} 条字幕` : `翻译完成，${j.result.count} 条`); }
+      else { const r = await api(`/api/projects/${encodeURIComponent(name)}`); undoStack.push(JSON.stringify(P)); P = r.project; previews.clear(); renderRows(); $("#btnUndo").disabled = false; setJob(1, jobDoneMsg(j)); }
       return;
     }
     await new Promise(r => setTimeout(r, 700));
   }
 }
+function jobDoneMsg(j) {
+  const r = j.result;
+  if (j.kind === "translate") return `翻译完成，${r.count} 条`;
+  if (r.mode === "none") return "画面里没找到字幕。" + (r.message || "");
+  if (r.mode === "speech") return `画面里没有字幕，已用语音转写生成 ${r.count} 条`;
+  return j.kind === "transcribe" ? `语音转写完成，${r.count} 条` : `识别到 ${r.count} 条字幕`;
+}
+$("#btnSpeech").onclick = async () => { if (P.cues.length && !confirm("语音转写会覆盖当前台词表（可撤销），继续？")) return; watchJob(await api(`/api/projects/${encodeURIComponent(name)}/transcribe?vocals=${$("#vocalsChk").checked}`, {method: "POST"})); };
+$("#btnSrtIn").onclick = () => { if (!P.cues.length || confirm("导入 SRT 会覆盖当前台词表（可撤销），继续？")) $("#srtIn").click(); };
+$("#srtIn").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = "";
+  const fd = new FormData(); fd.append("file", f);
+  undoStack.push(JSON.stringify(P)); $("#btnUndo").disabled = false;
+  const r = await fetch(`/api/projects/${encodeURIComponent(name)}/subtitles.srt`, {method: "POST", body: fd});
+  if (!r.ok) { setJob(0, "导入失败：" + ((await r.json()).detail || r.statusText)); return; }
+  P = (await api(`/api/projects/${encodeURIComponent(name)}`)).project; previews.clear(); renderRows();
+  setJob(1, `已导入 ${(await r.json()).count} 条`);
+};
 $("#btnDetect").onclick = async () => { if (P.cues.length && !confirm("重新识别会覆盖当前台词表（可撤销），继续？")) return; watchJob(await api(`/api/projects/${encodeURIComponent(name)}/detect`, {method: "POST"})); };
 $("#btnTranslate").onclick = async () => { await save(); watchJob(await api(`/api/projects/${encodeURIComponent(name)}/translate`, {method: "POST"})); };
 $("#btnExport").onclick = async () => { clearTimeout(saveTimer); await save(); watchJob(await api(`/api/projects/${encodeURIComponent(name)}/export`, {method: "POST"})); };

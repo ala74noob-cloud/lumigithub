@@ -19,7 +19,7 @@ from fastapi import Body, FastAPI, File, HTTPException, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse, PlainTextResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from core import detect, jobs, project as proj, render, style, subtitles, translate, video  # noqa: E402
+from core import detect, jobs, project as proj, render, style, subtitles, transcribe, translate, video  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 app = FastAPI(title="字幕工作室")
@@ -64,7 +64,7 @@ async def upload(file: UploadFile = File(...)):
     data = {"video": {"path": src.name, **meta}, "topic": name, "description": "",
             "cues": [], "logos": [], "glossary": {}}
     proj.save(name, data)
-    job = _detect_job(name)
+    job = _detect_job(name, auto_transcribe=True)
     return {"name": name, "project": data, "job": job}
 
 
@@ -109,17 +109,68 @@ def clean_cache(name: str):
 
 # ---------- 任务 ----------
 
-def _detect_job(name: str) -> dict:
+def _detect_job(name: str, auto_transcribe: bool = False) -> dict:
     def run(progress):
         p = proj.load(name)
         v = p["video"]
-        res = detect.detect(str(proj.project_dir(name) / v["path"]), v["width"], v["height"], v["fps"], progress)
+        scale = 0.6 if auto_transcribe else 1.0   # 可能接着转写，进度条留出余量
+        res = detect.detect(str(proj.project_dir(name) / v["path"]), v["width"], v["height"], v["fps"],
+                            lambda f, m: progress(f * scale, m))
         cues = [proj.new_cue(**c, placement=_default_placement(c["source_bbox"], v["height"])) for c in res["cues"]]
+        mode = "burned"
+        if not cues and auto_transcribe and v.get("has_audio"):
+            # 画面里没有字幕：自动改走语音转写
+            try:
+                cues = _transcribe_cues(name, lambda f, m: progress(0.6 + 0.4 * f, m))
+                mode = "speech"
+            except RuntimeError as e:  # 没装转写引擎：保留空表，把原因告诉前端
+                return {"count": 0, "mode": "none", "message": str(e)}
         p = proj.load(name)  # 期间可能被改过，重新读
-        p.update(cues=proj.renumber(cues), logos=res["logos"])
+        p.update(cues=proj.renumber(cues), logos=res["logos"], source_mode=mode)
         proj.save(name, p)
-        return {"count": len(cues)}
+        return {"count": len(cues), "mode": mode}
     return jobs.submit("detect", name, run)
+
+
+def _transcribe_cues(name: str, progress, vocals: bool = False) -> list[dict]:
+    p = proj.load(name)
+    v = p["video"]
+    res = transcribe.transcribe(proj.project_dir(name) / v["path"], v["duration"], progress, vocals=vocals)
+    out = []
+    for c in res["cues"]:
+        cue = proj.new_cue(start=c["start"], end=c["end"], source_text=c["text"], source_bbox=None,
+                           kind="caption", placement="below")
+        if c.get("lyric_suspect"):
+            cue["note"] = "疑似歌词，请确认类型"
+        out.append(cue)
+    return out
+
+
+@app.post("/api/projects/{name}/transcribe")
+def start_transcribe(name: str, vocals: bool = False):
+    _load(name)
+
+    def run(progress):
+        cues = _transcribe_cues(name, progress, vocals)
+        p = proj.load(name)
+        p.update(cues=proj.renumber(cues), source_mode="speech")
+        proj.save(name, p)
+        return {"count": len(cues), "mode": "speech"}
+    return jobs.submit("transcribe", name, run)
+
+
+@app.post("/api/projects/{name}/subtitles.srt")
+async def import_srt(name: str, file: UploadFile = File(...)):
+    p = _load(name)
+    text = (await file.read()).decode("utf-8-sig", errors="replace")
+    items = subtitles.parse_srt(text)
+    if not items:
+        raise HTTPException(400, "SRT 里没有读到字幕")
+    # 导入的文字当作中文（已经翻好的字幕）；原文留空
+    p["cues"] = proj.renumber([proj.new_cue(start=i["start"], end=i["end"], source_text="", source_bbox=None,
+                                            lines=i["lines"]) for i in items])
+    proj.save(name, p)
+    return {"count": len(items)}
 
 
 @app.post("/api/projects/{name}/detect")
