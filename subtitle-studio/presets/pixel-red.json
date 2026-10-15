@@ -1,0 +1,13 @@
+{
+  "name": "pixel-red",
+  "line_spacing": 1.28,
+  "label": "红色像素体",
+  "font": "pixel",
+  "size": 36,
+  "fill": "#E10E0A",
+  "glow": {
+    "color": "#FF2A1A",
+    "radius": 8,
+    "opacity": 0.8
+  }
+}

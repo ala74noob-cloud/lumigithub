@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>字幕工作室</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%23ffd65a%22/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#14151a; --panel:#1d1f26; --line:#2c2f39; --text:#e6e6ea; --dim:#8a8d99; --accent:#ffd65a; --bad:#ff6b6b; --ok:#5ad19a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+  header { display:flex; gap:8px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0 12px 0 0; }
+  button, select, input, textarea { font:inherit; color:inherit; background:#262933; border:1px solid var(--line); border-radius:6px; }
+  button { padding:5px 11px; cursor:pointer; }
+  button:hover { border-color:#4a4f5e; }
+  button.primary { background:var(--accent); color:#1a1a1a; border-color:var(--accent); font-weight:600; }
+  button:disabled { opacity:.45; cursor:default; }
+  select, input { padding:4px 6px; }
+  textarea { padding:4px 6px; resize:vertical; width:100%; }
+  main { display:grid; grid-template-columns: minmax(280px, 400px) 1fr; gap:14px; padding:14px; height:calc(100vh - 54px); }
+  #left { display:flex; flex-direction:column; gap:10px; min-height:0; }
+  #stage { position:relative; background:#000; border-radius:8px; overflow:hidden; align-self:center; height:min(70vh, 640px); aspect-ratio:9/16; max-width:100%; }
+  #stage video { display:block; width:100%; height:100%; object-fit:contain; }
+  #stage canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  #right { display:flex; flex-direction:column; min-height:0; gap:10px; }
+  #tablewrap { overflow:auto; flex:1; border:1px solid var(--line); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { border-bottom:1px solid var(--line); padding:6px; vertical-align:top; text-align:left; }
+  th { position:sticky; top:0; background:var(--panel); z-index:1; font-weight:600; color:var(--dim); font-size:12px; }
+  tr.active td { background:#232634; }
+  tr.lyric td { opacity:.55; }
+  tr.sel td:first-child { box-shadow: inset 3px 0 var(--accent); }
+  td.time input { width:72px; }
+  td.time .row { display:flex; gap:4px; align-items:center; margin-bottom:4px; }
+  td.time button { padding:1px 5px; font-size:12px; }
+  .warn { color:var(--bad); font-size:12px; }
+  .note { color:var(--dim); font-size:12px; }
+  .src { color:var(--dim); white-space:pre-wrap; }
+  .ops button { display:block; width:100%; margin-bottom:4px; font-size:12px; padding:3px 6px; white-space:nowrap; }
+  #job { display:flex; align-items:center; gap:8px; min-width:220px; color:var(--dim); }
+  #bar { width:140px; height:6px; background:#2b2e38; border-radius:3px; overflow:hidden; }
+  #bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px; }
+  .panel h3 { margin:0 0 6px; font-size:13px; color:var(--dim); font-weight:600; }
+  #exports a { color:var(--accent); display:block; }
+  #drop { position:fixed; inset:0; background:rgba(255,214,90,.12); border:3px dashed var(--accent); display:none; align-items:center; justify-content:center; font-size:22px; z-index:9; }
+  .bulk { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .alts button { display:block; text-align:left; width:100%; margin-top:4px; white-space:pre-wrap; }
+  @media (max-width: 860px) { main { grid-template-columns:1fr; height:auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>字幕工作室</h1>
+  <select id="projSel"><option value="">— 选择项目 —</option></select>
+  <label><button onclick="fileIn.click()">上传视频</button><input id="fileIn" type="file" accept="video/*" hidden></label>
+  <button id="btnDetect" disabled>识别字幕</button>
+  <button id="btnTranslate" disabled>自动翻译</button>
+  <button id="btnExport" class="primary" disabled>导出视频</button>
+  <button id="btnUndo" disabled title="Ctrl+Z">撤销</button>
+  <div id="job"><div id="bar"><i></i></div><span id="jobMsg"></span></div>
+</header>
+<main>
+  <section id="left">
+    <div id="stage"><video id="vid" controls playsinline></video><canvas id="cv"></canvas></div>
+    <label class="note"><input type="checkbox" id="safeChk"> 显示平台安全区（底部文案区 + 右侧按钮栏）</label>
+    <div class="panel">
+      <h3>视频简介（给翻译做上下文）</h3>
+      <textarea id="desc" rows="2" placeholder="例如：Oliver Heldens 巡演 vlog，波兰弗罗茨瓦夫站"></textarea>
+      <h3 style="margin-top:8px">术语表（每行 原文=译法）</h3>
+      <textarea id="gloss" rows="3" placeholder="Heldeep=Heldeep&#10;HI-LO=HI-LO"></textarea>
+    </div>
+    <div class="panel" id="exportsPanel">
+      <h3>导出记录</h3>
+      <div id="exports" class="note">还没有导出</div>
+      <div id="warns"></div>
+      <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap">
+        <button id="btnSrt" disabled>下载 SRT</button>
+        <button id="btnMd" disabled>下载台词表 Markdown</button>
+        <button id="btnClean" disabled>清理缓存</button>
+      </div>
+    </div>
+  </section>
+  <section id="right">
+    <div class="bulk panel">
+      <span class="note">已选 <b id="selCount">0</b> 条：</span>
+      <select id="bulkPlacement"><option value="">位置…</option></select>
+      <select id="bulkStyle"><option value="">样式…</option></select>
+      <button id="btnMerge">合并所选</button>
+      <button id="btnAdd">新增一条（当前时间）</button>
+    </div>
+    <div id="tablewrap">
+      <table>
+        <thead><tr><th style="width:28px"><input type="checkbox" id="selAll"></th><th>时间</th><th>类型</th><th style="min-width:160px">原文</th><th style="min-width:200px">中文（每行一句）</th><th>位置 / 样式</th><th style="width:104px">操作</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7" class="note">上传视频（或拖进窗口）后会自动识别字幕。</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<div id="drop">松开即可上传视频</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const KINDS = ["caption", "title", "label", "lyric", "logo"];
+const KIND_ZH = {caption:"文案/对白", title:"章节标题", label:"画面标注", lyric:"歌词", logo:"Logo"};
+const PLACEMENTS = {below:"原文下方", above:"原文上方", cover:"覆盖原位", custom:"自定义"};
+let name = null, P = null, presets = {}, undoStack = [], selected = new Set(), activeId = null, loopSeg = null;
+const previews = new Map();   // cue id -> {key, img, x, y, warnings}
+const vid = $("#vid"), cv = $("#cv"), ctx = cv.getContext("2d");
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opts});
+  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).detail || m; } catch {} throw new Error(m); }
+  return r.headers.get("content-type")?.includes("json") ? r.json() : r.text();
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = t => (+t).toFixed(2);
+
+// ---------- 项目 ----------
+async function refreshList() {
+  const list = await api("/api/projects");
+  $("#projSel").innerHTML = '<option value="">— 选择项目 —</option>' + list.map(n => `<option ${n===name?"selected":""}>${esc(n)}</option>`).join("");
+}
+async function openProject(n) {
+  name = n; undoStack = []; selected.clear(); previews.clear();
+  const r = await api(`/api/projects/${encodeURIComponent(n)}`);
+  P = r.project;
+  vid.src = `/api/projects/${encodeURIComponent(n)}/video`;
+  cv.width = P.video.width; cv.height = P.video.height;
+  $("#stage").style.aspectRatio = `${P.video.width}/${P.video.height}`;
+  $("#desc").value = P.description || "";
+  $("#gloss").value = Object.entries(P.glossary || {}).map(([k, v]) => `${k}=${v}`).join("\n");
+  ["#btnDetect","#btnTranslate","#btnExport","#btnSrt","#btnMd","#btnClean"].forEach(s => $(s).disabled = false);
+  renderRows(); loadExports(); refreshList();
+  for (const j of r.jobs) watchJob(j);
+}
+async function upload(file) {
+  const fd = new FormData(); fd.append("file", file);
+  setJob(0, "上传中…");
+  const r = await fetch("/api/projects", {method: "POST", body: fd});
+  if (!r.ok) { setJob(0, "上传失败：" + ((await r.json()).detail || r.statusText)); return; }
+  const d = await r.json();
+  await openProject(d.name);
+  watchJob(d.job);
+}
+$("#fileIn").onchange = e => e.target.files[0] && upload(e.target.files[0]);
+$("#projSel").onchange = e => e.target.value && openProject(e.target.value);
+let dragDepth = 0;
+addEventListener("dragenter", e => { e.preventDefault(); dragDepth++; $("#drop").style.display = "flex"; });
+addEventListener("dragleave", () => { if (--dragDepth <= 0) $("#drop").style.display = "none"; });
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => { e.preventDefault(); dragDepth = 0; $("#drop").style.display = "none"; const f = e.dataTransfer.files[0]; if (f) upload(f); });
+
+// ---------- 保存 / 撤销 ----------
+let saveTimer = null;
+function commit(mutator) {          // 所有修改都走这里：先存快照再改，然后自动保存
+  undoStack.push(JSON.stringify(P)); if (undoStack.length > 200) undoStack.shift();
+  mutator(); $("#btnUndo").disabled = false; scheduleSave();
+}
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 500); }
+async function save() {
+  if (!name) return;
+  P.description = $("#desc").value;
+  P.glossary = Object.fromEntries($("#gloss").value.split("\n").map(l => l.split("=")).filter(p => p[0]?.trim()).map(([k, ...v]) => [k.trim(), v.join("=").trim() || k.trim()]));
+  await api(`/api/projects/${encodeURIComponent(name)}`, {method: "PUT", body: JSON.stringify(P)});
+}
+function undo() { if (!undoStack.length) return; P = JSON.parse(undoStack.pop()); $("#btnUndo").disabled = !undoStack.length; renderRows(); scheduleSave(); }
+$("#btnUndo").onclick = undo;
+addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); undo(); } });
+$("#desc").oninput = $("#gloss").oninput = scheduleSave;
+
+// ---------- 台词表 ----------
+const opt = (obj, cur) => Object.entries(obj).map(([v, l]) => `<option value="${v}" ${v===cur?"selected":""}>${esc(l)}</option>`).join("");
+function renderRows() {
+  const tb = $("#rows");
+  if (!P.cues.length) { tb.innerHTML = '<tr><td colspan="7" class="note">还没有字幕。点“识别字幕”，或“新增一条”手动添加。</td></tr>'; updateSel(); return; }
+  const styles = Object.fromEntries(Object.entries(presets).map(([k, v]) => [k, v.label ? `${k}（${v.label}）` : k]));
+  tb.innerHTML = P.cues.map(c => `
+    <tr data-id="${c.id}" class="${c.kind==="lyric"?"lyric":""} ${selected.has(c.id)?"sel":""} ${c.id===activeId?"active":""}">
+      <td><input type="checkbox" class="sel" ${selected.has(c.id)?"checked":""}><div class="note">${c.id}</div></td>
+      <td class="time">
+        <div class="row"><input type="number" step="0.01" min="0" data-f="start" value="${fmt(c.start)}"><button data-a="setStart" title="设为当前播放位置">⏱</button><button data-a="nudge" data-f="start" data-d="-1">-1s</button><button data-a="nudge" data-f="start" data-d="1">+1s</button></div>
+        <div class="row"><input type="number" step="0.01" min="0" data-f="end" value="${fmt(c.end)}"><button data-a="setEnd" title="设为当前播放位置">⏱</button><button data-a="nudge" data-f="end" data-d="-1">-1s</button><button data-a="nudge" data-f="end" data-d="1">+1s</button></div>
+      </td>
+      <td><select data-f="kind">${opt(Object.fromEntries(KINDS.map(k => [k, KIND_ZH[k]])), c.kind)}</select></td>
+      <td><textarea data-f="source_text" rows="2" class="src">${esc(c.source_text)}</textarea></td>
+      <td><textarea data-f="lines" rows="${Math.max(2, (c.lines||[]).length + 1)}" placeholder="${c.kind==="lyric"?"歌词默认不翻译":""}">${esc((c.lines||[]).join("\n"))}</textarea>
+          <div class="warn" data-warn></div>${c.note ? `<div class="note">备注：${esc(c.note)}</div>` : ""}<div class="alts"></div></td>
+      <td><select data-f="placement">${opt(PLACEMENTS, c.placement)}</select><br><select data-f="style" style="margin-top:4px">${opt(styles, c.style)}</select></td>
+      <td class="ops"><button data-a="alts">再给 3 个说法</button><button data-a="redo">重新翻译</button><button data-a="split">拆分</button><button data-a="del">删除</button></td>
+    </tr>`).join("");
+  updateSel(); P.cues.forEach(c => ensurePreview(c));
+}
+const cueOf = el => P.cues.find(c => c.id === el.closest("tr").dataset.id);
+$("#rows").addEventListener("change", e => {
+  const f = e.target.dataset.f; if (!f) return;
+  const c = cueOf(e.target);
+  commit(() => {
+    if (f === "start" || f === "end") c[f] = Math.max(0, +e.target.value);
+    else if (f === "lines") c.lines = e.target.value.split("\n").map(s => s.trim()).filter(Boolean);
+    else c[f] = e.target.value;
+  });
+  if (f === "kind") e.target.closest("tr").classList.toggle("lyric", c.kind === "lyric");
+  ensurePreview(c);
+});
+$("#rows").addEventListener("input", e => {   // 中文实时预览（不进撤销栈，change 时才提交）
+  if (e.target.dataset.f !== "lines") return;
+  e.target.rows = Math.max(2, e.target.value.split("\n").length + 1);
+  const c = cueOf(e.target);
+  ensurePreview({...c, lines: e.target.value.split("\n").map(s => s.trim()).filter(Boolean)});
+});
+$("#rows").addEventListener("click", async e => {
+  const tr = e.target.closest("tr"); if (!tr?.dataset.id) return;
+  const c = cueOf(tr), a = e.target.dataset.a;
+  if (e.target.classList.contains("sel")) { e.target.checked ? selected.add(c.id) : selected.delete(c.id); tr.classList.toggle("sel", e.target.checked); updateSel(); return; }
+  if (!a) {
+    if (/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) return;
+    activeId = c.id; loopSeg = [c.start, c.end]; vid.currentTime = c.start; vid.play();
+    document.querySelectorAll("#rows tr").forEach(r => r.classList.toggle("active", r.dataset.id === c.id));
+    return;
+  }
+  if (a === "setStart" || a === "setEnd") { commit(() => c[a === "setStart" ? "start" : "end"] = +vid.currentTime.toFixed(2)); renderRows(); }
+  if (a === "nudge") { commit(() => c[e.target.dataset.f] = Math.max(0, +(c[e.target.dataset.f] + +e.target.dataset.d).toFixed(2))); renderRows(); }
+  if (a === "del") { commit(() => P.cues = P.cues.filter(x => x !== c)); selected.delete(c.id); renderRows(); }
+  if (a === "split") {
+    const t = vid.currentTime > c.start && vid.currentTime < c.end ? vid.currentTime : (c.start + c.end) / 2;
+    commit(() => {
+      const b = JSON.parse(JSON.stringify(c)); b.start = +t.toFixed(2); c.end = b.start;
+      const half = Math.ceil((c.lines || []).length / 2); b.lines = (c.lines || []).slice(half); c.lines = (c.lines || []).slice(0, half);
+      P.cues.splice(P.cues.indexOf(c) + 1, 0, b); renumber();
+    }); renderRows();
+  }
+  if (a === "alts" || a === "redo") {
+    const box = tr.querySelector(".alts"); box.innerHTML = '<span class="note">Claude 思考中…</span>';
+    try {
+      await save();
+      const alts = await api(`/api/projects/${encodeURIComponent(name)}/cues/${c.id}/alternatives?n=${a === "alts" ? 3 : 1}`, {method: "POST"});
+      if (a === "redo" && alts[0]) { commit(() => c.lines = alts[0]); renderRows(); return; }
+      box.innerHTML = alts.map((l, i) => `<button data-alt="${i}">${esc(l.join("\n"))}</button>`).join("");
+      box.onclick = ev => { const i = ev.target.dataset.alt; if (i == null) return; commit(() => c.lines = alts[+i]); renderRows(); };
+    } catch (err) { box.innerHTML = `<span class="warn">${esc(err.message)}</span>`; }
+  }
+});
+function renumber() { P.cues.sort((a, b) => a.start - b.start || a.end - b.end); }
+function updateSel() { $("#selCount").textContent = selected.size; }
+$("#selAll").onchange = e => { selected = new Set(e.target.checked ? P.cues.map(c => c.id) : []); renderRows(); };
+$("#bulkPlacement").innerHTML += opt(PLACEMENTS);
+$("#bulkPlacement").onchange = e => { const v = e.target.value; if (!v) return; commit(() => P.cues.forEach(c => selected.has(c.id) && (c.placement = v))); e.target.value = ""; renderRows(); };
+$("#bulkStyle").onchange = e => { const v = e.target.value; if (!v) return; commit(() => P.cues.forEach(c => selected.has(c.id) && (c.style = v))); e.target.value = ""; renderRows(); };
+$("#btnMerge").onclick = () => {
+  const g = P.cues.filter(c => selected.has(c.id)); if (g.length < 2) return alert("至少选两条");
+  commit(() => {
+    const a = g[0];
+    a.start = Math.min(...g.map(c => c.start)); a.end = Math.max(...g.map(c => c.end));
+    a.source_text = g.map(c => c.source_text).join("\n"); a.lines = g.flatMap(c => c.lines || []);
+    const bs = g.map(c => c.source_bbox).filter(Boolean);
+    if (bs.length) a.source_bbox = [Math.min(...bs.map(b => b[0])), Math.min(...bs.map(b => b[1])), Math.max(...bs.map(b => b[2])), Math.max(...bs.map(b => b[3]))];
+    P.cues = P.cues.filter(c => c === a || !selected.has(c.id));
+  });
+  selected.clear(); renderRows();
+};
+$("#btnAdd").onclick = () => {
+  if (!P) return;
+  const t = +vid.currentTime.toFixed(2);
+  commit(() => { P.cues.push({id: "n" + Date.now(), start: t, end: +(t + 2).toFixed(2), source_text: "", source_bbox: null, kind: "caption", fade: {in: null, out: null, curve: null}, lines: [], placement: "below", style: "gold", style_override: {}, cover: "none", inpaint: false, note: ""}); renumber(); });
+  renderRows();
+};
+
+// ---------- 预览（服务器渲染，和导出同一张图） ----------
+const pending = new Map();
+function ensurePreview(c) {
+  const key = JSON.stringify([c.lines, c.style, c.style_override, c.placement, c.position, c.source_bbox, c.kind]);
+  const cur = previews.get(c.id);
+  if (cur && cur.key === key) { showWarn(c.id, cur.warnings); return; }
+  clearTimeout(pending.get(c.id));
+  pending.set(c.id, setTimeout(async () => {
+    const r = await api(`/api/projects/${encodeURIComponent(name)}/preview`, {method: "POST", body: JSON.stringify(c)});
+    let img = null;
+    if (r.png) { img = new Image(); img.src = r.png; await img.decode().catch(() => {}); }
+    previews.set(c.id, {key, img, x: r.x, y: r.y, warnings: r.warnings}); showWarn(c.id, r.warnings);
+  }, 150));
+}
+function showWarn(id, w) { const el = document.querySelector(`tr[data-id="${id}"] [data-warn]`); if (el) el.textContent = (w || []).join("；"); }
+function draw() {
+  requestAnimationFrame(draw);
+  if (!P) return;
+  const t = vid.currentTime;
+  if (loopSeg && !vid.paused && t >= loopSeg[1]) vid.currentTime = loopSeg[0];
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  for (const c of P.cues) {
+    if (c.kind === "logo" || c.kind === "lyric" || t < c.start || t >= c.end) continue;
+    const p = previews.get(c.id); if (p?.img) ctx.drawImage(p.img, p.x, p.y);
+  }
+  if ($("#safeChk").checked) {
+    const W = cv.width, H = cv.height;
+    ctx.fillStyle = "rgba(255,80,80,.18)";
+    ctx.fillRect(0, H * 0.80, W, H * 0.20);           // 抖音底部文案区（约 20%）
+    ctx.fillRect(W * 0.84, H * 0.38, W * 0.16, H * 0.42); // 右侧按钮栏
+    ctx.strokeStyle = "rgba(255,80,80,.7)"; ctx.lineWidth = 2;
+    ctx.strokeRect(W * 0.07, H * 0.06, W * 0.86, H * 0.74);
+  }
+}
+vid.addEventListener("seeking", () => { if (loopSeg && (vid.currentTime < loopSeg[0] - 0.05 || vid.currentTime > loopSeg[1] + 0.05)) loopSeg = null; });
+requestAnimationFrame(draw);
+
+// ---------- 任务 ----------
+function setJob(p, msg) { $("#bar i").style.width = (p * 100).toFixed(1) + "%"; $("#jobMsg").textContent = msg || ""; }
+const watching = new Set();
+async function watchJob(job) {
+  if (watching.has(job.id)) return;
+  watching.add(job.id);
+  const busy = ["#btnDetect", "#btnTranslate", "#btnExport"];
+  busy.forEach(s => $(s).disabled = true);
+  while (true) {
+    const j = await api(`/api/jobs/${job.id}`);
+    const eta = j.eta ? `，约剩 ${Math.ceil(j.eta)} 秒` : "";
+    setJob(j.progress, `${j.message || ""}${eta}`);
+    if (j.status === "done" || j.status === "error") {
+      busy.forEach(s => $(s).disabled = false);
+      if (j.status === "error") { setJob(0, "出错：" + j.error); return; }
+      if (j.kind === "export") { showExport(j.result); setJob(1, "导出完成"); }
+      else { const r = await api(`/api/projects/${encodeURIComponent(name)}`); undoStack.push(JSON.stringify(P)); P = r.project; previews.clear(); renderRows(); $("#btnUndo").disabled = false; setJob(1, j.kind === "detect" ? `识别到 ${j.result.count} 条字幕` : `翻译完成，${j.result.count} 条`); }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 700));
+  }
+}
+$("#btnDetect").onclick = async () => { if (P.cues.length && !confirm("重新识别会覆盖当前台词表（可撤销），继续？")) return; watchJob(await api(`/api/projects/${encodeURIComponent(name)}/detect`, {method: "POST"})); };
+$("#btnTranslate").onclick = async () => { await save(); watchJob(await api(`/api/projects/${encodeURIComponent(name)}/translate`, {method: "POST"})); };
+$("#btnExport").onclick = async () => { clearTimeout(saveTimer); await save(); watchJob(await api(`/api/projects/${encodeURIComponent(name)}/export`, {method: "POST"})); };
+$("#btnSrt").onclick = () => location.href = `/api/projects/${encodeURIComponent(name)}/subtitles.srt`;
+$("#btnMd").onclick = () => location.href = `/api/projects/${encodeURIComponent(name)}/subtitles.md`;
+$("#btnClean").onclick = async () => { await api(`/api/projects/${encodeURIComponent(name)}/clean`, {method: "POST"}); setJob(0, "缓存已清理"); };
+async function loadExports() {
+  const list = await api(`/api/projects/${encodeURIComponent(name)}/exports`);
+  $("#exports").innerHTML = list.length ? list.map(f => `<a href="/api/projects/${encodeURIComponent(name)}/exports/${encodeURIComponent(f)}">${esc(f)}</a>`).join("") : "还没有导出";
+}
+function showExport(r) {
+  loadExports();
+  const base = `/api/projects/${encodeURIComponent(name)}/exports/`;
+  $("#warns").innerHTML = (r.check ? `<a href="${base}${encodeURIComponent(r.check)}" target="_blank"><img src="${base}${encodeURIComponent(r.check)}" style="width:100%;margin-top:8px;border-radius:6px"></a>` : "")
+    + (r.warnings.length ? r.warnings.map(w => `<div class="warn">${w.cue_id ? w.cue_id + "：" : ""}${esc(w.message)}</div>`).join("") : '<div class="note" style="color:var(--ok)">自检通过</div>');
+}
+
+(async () => {
+  presets = await api("/api/presets");
+  $("#bulkStyle").innerHTML += Object.keys(presets).map(k => `<option>${k}</option>`).join("");
+  await refreshList();
+})();
+</script>
+</body>
+</html>

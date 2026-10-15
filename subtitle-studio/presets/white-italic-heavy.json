@@ -1,0 +1,16 @@
+{
+  "name": "white-italic-heavy",
+  "line_spacing": 1.28,
+  "label": "白色粗斜体",
+  "font": "black",
+  "size": 32,
+  "fill": "#FFFFFF",
+  "skew": 0.18,
+  "shadow": {
+    "dx": 2,
+    "dy": 3,
+    "blur": 3,
+    "color": "#000000",
+    "opacity": 0.65
+  }
+}

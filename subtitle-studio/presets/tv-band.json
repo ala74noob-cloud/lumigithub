@@ -1,0 +1,26 @@
+{
+  "name": "tv-band",
+  "line_spacing": 1.28,
+  "label": "金字羽化底条",
+  "font": "bold",
+  "size": 30,
+  "fill": "#FFD65A",
+  "box": {
+    "color": "#000000",
+    "opacity": 0.6,
+    "radius": 0,
+    "padding": [
+      60,
+      18
+    ],
+    "per_line": false,
+    "feather": 24
+  },
+  "shadow": {
+    "dx": 0,
+    "dy": 1,
+    "blur": 2,
+    "color": "#000000",
+    "opacity": 0.5
+  }
+}

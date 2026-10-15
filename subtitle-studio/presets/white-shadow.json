@@ -1,0 +1,15 @@
+{
+  "name": "white-shadow",
+  "line_spacing": 1.28,
+  "label": "白字柔和投影",
+  "font": "bold",
+  "size": 30,
+  "fill": "#FFFFFF",
+  "shadow": {
+    "dx": 0,
+    "dy": 2,
+    "blur": 5,
+    "color": "#000000",
+    "opacity": 0.7
+  }
+}

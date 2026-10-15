@@ -1,0 +1,19 @@
+{
+  "name": "pill-dark",
+  "line_spacing": 1.28,
+  "label": "黑底圆角白字",
+  "font": "bold",
+  "size": 28,
+  "fill": "#FFFFFF",
+  "box": {
+    "color": "#000000",
+    "opacity": 0.67,
+    "radius": 10,
+    "padding": [
+      14,
+      7
+    ],
+    "per_line": true,
+    "feather": 0
+  }
+}

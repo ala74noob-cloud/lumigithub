@@ -1,0 +1,19 @@
+{
+  "name": "gold",
+  "line_spacing": 1.28,
+  "label": "暖金黄",
+  "font": "bold",
+  "size": 30,
+  "fill": "#FFD65A",
+  "stroke": {
+    "color": "#1E1A10",
+    "width": 2
+  },
+  "shadow": {
+    "dx": 0,
+    "dy": 2,
+    "blur": 3,
+    "color": "#000000",
+    "opacity": 0.55
+  }
+}

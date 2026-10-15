@@ -1,0 +1,19 @@
+{
+  "name": "pill-light",
+  "line_spacing": 1.28,
+  "label": "白底圆角黑字",
+  "font": "bold",
+  "size": 28,
+  "fill": "#111111",
+  "box": {
+    "color": "#FFFFFF",
+    "opacity": 0.88,
+    "radius": 14,
+    "padding": [
+      16,
+      8
+    ],
+    "per_line": true,
+    "feather": 0
+  }
+}

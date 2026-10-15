@@ -1,0 +1,19 @@
+{
+  "name": "ice",
+  "line_spacing": 1.28,
+  "label": "冰蓝",
+  "font": "bold",
+  "size": 30,
+  "fill": "#8CE2FF",
+  "stroke": {
+    "color": "#0E1A22",
+    "width": 2
+  },
+  "shadow": {
+    "dx": 0,
+    "dy": 2,
+    "blur": 3,
+    "color": "#000000",
+    "opacity": 0.55
+  }
+}

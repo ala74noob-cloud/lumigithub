@@ -1,0 +1,8 @@
+.env
+projects/*
+!projects/.gitkeep
+fonts/*.otf
+fonts/*.ttf
+fonts/*.ttc
+__pycache__/
+.pytest_cache/
