@@ -2,7 +2,9 @@
 
 本地运行的竖屏短视频字幕翻译工具：拖入视频 → 自动识别烧录字幕 → Claude 翻译成口语化中文 → 在台词表里改 → 一键导出压制好的 MP4（音轨原样保留）。所有处理都在本机完成，只有翻译请求会发给 Anthropic API。
 
-当前进度：**里程碑 1（最小可用版）**：烧录字幕检测 + OCR → Claude 翻译 → 台词表编辑 → 用预设硬切导出。
+当前进度：
+- **里程碑 1**：烧录字幕检测 + OCR → Claude 翻译 → 台词表编辑 → 用预设硬切导出。
+- **里程碑 4（语音转写）**：视频里没有烧录字幕时，用 Whisper 听写生成台词；可选人声分离、疑似歌词提示、SRT 导入。
 
 ## 安装
 
@@ -17,16 +19,20 @@ cp .env.example .env                # 填 ANTHROPIC_API_KEY
 python app.py                       # 打开 http://localhost:8000
 ```
 
+`requirements.txt` 会按电脑自动装语音转写引擎：Apple Silicon Mac（M1–M4）装 **mlx-whisper**，用 GPU 跑；其他电脑装 **faster-whisper**（有 N 卡走 CUDA）。第一次转写会自动下载模型（约 1.5GB），之后离线可用。
+
+演出现场这类背景音乐很响的视频，可以再装 `pip install demucs`，在界面上勾选“人声分离”后再转写（会慢一些）。
+
 OCR 默认用 RapidOCR（PaddleOCR 模型的 ONNX 版，pip 直接装好）。装了 `paddleocr` 会优先用它；也可以用环境变量 `OCR_ENGINE=paddle|rapid|easy` 指定。
 
 ## 使用
 
-1. 点“上传视频”或直接把视频拖进窗口，上传后自动识别字幕（常驻 Logo/水印会被排除，不进台词表）。
+1. 点“上传视频”或直接把视频拖进窗口，上传后自动识别字幕（常驻 Logo/水印会被排除，不进台词表）。画面里没有字幕时会自动改用语音转写；也可以随时点“语音转写”手动切换。听起来像歌词的句子（副歌重复、押韵）会在备注里标“疑似歌词”，确认后把类型改成“歌词”，翻译时就会跳过。
 2. 填视频简介和术语表（可选），点“自动翻译”。碎句会按意思合并，每条至少显示 1.2 秒。
 3. 在台词表里改时间、中文、位置、样式。点一行，视频跳到这一段循环播放；左侧预览和最终导出用的是同一张渲染图。
 4. “再给 3 个说法”和“重新翻译”只重做这一条。所有修改自动保存到 `projects/<视频名>/project.json`，可以撤销（Ctrl+Z）。
 5. 点“导出视频”，在 `projects/<视频名>/exports/` 生成 `<视频名>_中文字幕_v<N>.mp4`，每次版本号 +1，不覆盖旧版。同时生成一张检查图，并对超宽、和原文重叠、时长不一致给出警告。
-6. 可以下载 SRT 和“台词表 Markdown”发给同事审。
+6. 可以下载 SRT 和“台词表 Markdown”发给同事审；也可以导入已经翻好的 SRT。
 
 ## 目录
 
@@ -34,6 +40,7 @@ OCR 默认用 RapidOCR（PaddleOCR 模型的 ONNX 版，pip 直接装好）。�
 app.py            FastAPI 入口 + API
 core/detect.py    烧录字幕检测（抽样 OCR 找字幕带 → 掩码切时间轴 → 段内 OCR → 合并 → bbox）
 core/ocr.py       OCR 引擎封装（PaddleOCR / RapidOCR / EasyOCR）
+core/transcribe.py 语音转写（mlx-whisper / faster-whisper，按停顿和句末断句）
 core/translate.py Claude 翻译（提示词、合并、最短时长）
 core/style.py     中文字幕渲染（Pillow：底块 → 辉光 → 投影 → 描边 → emoji）
 core/render.py    ffmpeg 合成导出 + 检查图
@@ -55,4 +62,3 @@ python -m pytest
 
 - 2 样式与位置：微调面板、另存预设、每个艺人的默认预设、自定义位置拖动
 - 3 涂抹与淡入淡出：LaMa、半透明底块、淡入淡出曲线
-- 4 语音转写：faster-whisper、人声分离、歌词标记、SRT 导入
