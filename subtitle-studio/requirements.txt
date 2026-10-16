@@ -7,7 +7,7 @@ numpy>=1.26
 opencv-python-headless>=4.9
 pillow>=10.3
 # OCR: PaddleOCR 是首选；装不上时用 RapidOCR（同一套 PaddleOCR 模型的 ONNX 版，纯 pip 安装）
-rapidocr-onnxruntime>=1.3
+rapidocr-onnxruntime>=1.2
 # paddleocr>=2.7   # 可选，装了会优先使用
 # 语音转写（二选一，按电脑装）：
 #   Mac（M1–M4）：pip install mlx-whisper        用 GPU，最快

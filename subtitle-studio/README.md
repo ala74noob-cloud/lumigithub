@@ -6,7 +6,15 @@
 - **里程碑 1**：烧录字幕检测 + OCR → Claude 翻译 → 台词表编辑 → 用预设硬切导出。
 - **里程碑 4（语音转写）**：视频里没有烧录字幕时，用 Whisper 听写生成台词；可选人声分离、疑似歌词提示、SRT 导入。
 
-## 安装
+## 最简单的方法（Mac）
+
+1. 下载整个代码 zip 并解压。
+2. 打开“终端”，输入 `bash `（bash 后面有一个空格），把 `subtitle-studio` 文件夹里的 `启动字幕工作室.command` 拖进终端窗口，按回车。
+3. 按提示操作：第一次会自动安装 Homebrew、ffmpeg、Python 和所有依赖，中途要输入一次开机密码，再粘贴一次 Claude 的 API key。装好后会自动打开浏览器。
+
+以后每次使用都重复第 2 步，脚本会跳过已经装好的部分，直接启动。
+
+## 手动安装
 
 需要 Python 3.10+ 和 ffmpeg（macOS：`brew install ffmpeg`；Windows：`winget install ffmpeg`）。
 

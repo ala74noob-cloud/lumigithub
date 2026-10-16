@@ -6,3 +6,4 @@ fonts/*.ttf
 fonts/*.ttc
 __pycache__/
 .pytest_cache/
+.venv/
