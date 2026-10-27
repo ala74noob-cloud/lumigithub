@@ -1,0 +1,115 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/900.css">
+<link rel="stylesheet" href="fonts/700.css">
+<link rel="stylesheet" href="fonts/500.css">
+<style>
+@font-face{font-family:'Archivo Black';src:url(fonts/files/archivo-black-latin-400-normal.woff2) format('woff2');}
+@font-face{font-family:'Space Mono';font-weight:700;src:url(fonts/files/space-mono-latin-700-normal.woff2) format('woff2');}
+:root{--red:#ff2a1a;--W:1080px;--H:1350px;--imgTop:371px;--imgH:608px;}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
+.poster{position:relative;width:var(--W);height:var(--H);overflow:hidden;background:#050505}
+
+/* ---------- photo layers ---------- */
+.bg{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
+.bgshade{position:absolute;inset:0;background:rgba(0,0,0,.62)}
+.photo{position:absolute;left:0;width:100%;background-size:cover;background-position:center;
+  filter:contrast(1.08) saturate(1.08)}
+.land .photo{top:var(--imgTop);height:var(--imgH);
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 46px,#000 calc(100% - 46px),transparent 100%)}
+.port .photo{inset:0;height:100%;background-position:var(--pos,center);filter:brightness(.72) contrast(1.15) saturate(1.05)}
+.grad{position:absolute;inset:0;pointer-events:none}
+.land .grad{background:linear-gradient(180deg,transparent 0,transparent calc(var(--imgTop) + var(--imgH) - 230px),rgba(0,0,0,.72) calc(var(--imgTop) + var(--imgH) - 20px),transparent 100%)}
+.port .grad{background:
+  linear-gradient(180deg,rgba(0,0,0,.86) 0,rgba(0,0,0,.6) 300px,rgba(0,0,0,0) 470px),
+  linear-gradient(0deg,rgba(0,0,0,.92) 0,rgba(0,0,0,.78) 330px,rgba(0,0,0,.55) 520px,rgba(0,0,0,.2) 640px,rgba(0,0,0,0) 760px)}
+
+/* ---------- VHS overlays ---------- */
+.scan{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.noise{position:absolute;inset:0;pointer-events:none;opacity:.16;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- type: image-1 style ---------- */
+.red{color:var(--red);
+  text-shadow:-2px 0 rgba(0,210,255,.28),2px 0 rgba(255,0,40,.55),0 0 14px rgba(255,35,20,.65),0 0 36px rgba(255,20,10,.35)}
+.lines{-webkit-mask-image:repeating-linear-gradient(180deg,#000 0 3px,rgba(0,0,0,.5) 3px 4px)}
+.dots{-webkit-mask-image:repeating-linear-gradient(90deg,#000 0 3px,rgba(0,0,0,.35) 3px 4px),repeating-linear-gradient(180deg,#000 0 3px,rgba(0,0,0,.35) 3px 4px);
+  -webkit-mask-composite:source-in;mask-composite:intersect}
+.heavy{font-family:'Archivo Black','Noto Sans SC',sans-serif;font-weight:900;text-transform:uppercase}
+.mono{font-family:'Space Mono','Noto Sans SC',monospace;font-weight:700;text-transform:uppercase}
+.cn{font-family:'Noto Sans SC',sans-serif}
+
+.ui{position:absolute;inset:0;padding:44px 58px 46px;display:flex;flex-direction:column}
+/* top */
+.top{display:flex;justify-content:space-between;align-items:flex-start}
+.brand{font-size:96px;line-height:.86;letter-spacing:-3px}
+.meta{text-align:right;font-size:23px;line-height:1.45;letter-spacing:.1em;padding-top:8px}
+.meta b{font-size:34px;letter-spacing:.06em;display:block}
+.title{margin-top:14px;font-size:88px;line-height:1;font-weight:900;letter-spacing:6px}
+.tag{margin-top:16px;font-size:28px;font-weight:700;letter-spacing:.24em}
+.tag i{font-style:normal;font-family:'Space Mono';margin:0 .35em;letter-spacing:0}
+/* middle headline over image */
+.spacer{flex:1}
+.hook{text-align:center}
+.hook .big{font-size:70px;font-weight:900;letter-spacing:8px;line-height:1.05}
+.hook .sub{margin-top:24px;font-size:29px;font-weight:700;letter-spacing:.16em}
+/* split info like image 2 */
+.split{margin-top:34px;display:grid;grid-template-columns:1fr 2px 1fr;align-items:center;text-align:center}
+.split .bar{height:150px;background:var(--red);box-shadow:0 0 12px rgba(255,40,20,.8);opacity:.85}
+.lab{font-size:20px;letter-spacing:.3em;opacity:.95}
+.val{font-size:62px;line-height:1.05;margin:8px 0 6px;letter-spacing:-1px}
+.val.s{font-size:44px;line-height:1.22;margin:12px 0 8px;letter-spacing:-.5px}
+.sm{font-size:26px;letter-spacing:.12em}
+.buy{margin:32px auto 0;font-size:25px;letter-spacing:.2em;padding:12px 30px 11px;border:2px solid var(--red);
+  box-shadow:0 0 14px rgba(255,40,20,.55),inset 0 0 14px rgba(255,40,20,.35)}
+.buy em{font-style:normal;font-family:'Space Mono'}
+</style></head>
+<body>
+<div class="poster" id="p">
+  <div class="bg" id="bg"></div><div class="bgshade" id="bgs"></div>
+  <div class="photo" id="ph"></div>
+  <div class="grad"></div>
+  <div class="ui">
+    <div class="top">
+      <div class="brand heavy red lines">Magic<br>Room</div>
+      <div class="meta mono red dots">Hong Kong · 香港<br><b>2026.11.21</b>15:30–22:00</div>
+    </div>
+    <div class="title cn red lines">浩室音乐派对</div>
+    <div class="tag cn red dots">维港海景<i>×</i>摩天轮<i>×</i>城市天际线</div>
+    <div class="spacer"></div>
+    <div class="hook">
+      <div class="big cn red lines">港风电音派对来了</div>
+      <div class="sub cn red dots">吹着维港季候风，享受 <span class="mono" style="letter-spacing:.08em">HOUSE</span> 音乐</div>
+    </div>
+    <div class="split">
+      <div>
+        <div class="lab mono red dots">DATE · 时间</div>
+        <div class="val heavy red lines">11.21</div>
+        <div class="sm mono red dots">15:30–22:00</div>
+      </div>
+      <div class="bar"></div>
+      <div>
+        <div class="lab mono red dots">VENUE · 地点</div>
+        <div class="val s heavy red lines">AIA Vitality<br>Park</div>
+        <div class="sm mono red dots">香港 HONG KONG</div>
+      </div>
+    </div>
+    <div class="buy cn red dots">芋圆搜索 <em>MAGIC ROOM</em> 购票</div>
+  </div>
+  <div class="scan"></div><div class="noise"></div><div class="vig"></div>
+</div>
+<script>
+const q=new URLSearchParams(location.search), img=q.get('img'), mode=q.get('mode');
+const p=document.getElementById('p');p.classList.add(mode);
+document.getElementById('ph').style.backgroundImage=`url(${img})`;
+if(mode==='land'){
+  document.getElementById('bg').style.backgroundImage=`url(${img})`;
+  const ar=+q.get('ar'); const h=Math.round(1080/ar);
+  p.style.setProperty('--imgH',h+'px'); p.style.setProperty('--imgTop',Math.round((1350-h)/2)+'px');
+}else{document.getElementById('bg').remove();document.getElementById('bgs').remove();
+  if(q.get('pos'))p.style.setProperty('--pos',q.get('pos'));}
+</script>
+</body></html>
