@@ -13,7 +13,7 @@ html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
 
 /* ---------- photo layers ---------- */
 .bg{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
-.bgshade{position:absolute;inset:0;background:rgba(0,0,0,.62)}
+.bgshade{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .photo{position:absolute;left:0;width:100%;background-size:cover;background-position:center;
   filter:contrast(1.08) saturate(1.08)}
 .land .photo{top:var(--imgTop);height:var(--imgH);
@@ -45,17 +45,17 @@ html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
 .ui{position:absolute;inset:0;padding:44px 58px 46px;display:flex;flex-direction:column}
 /* top */
 .top{display:flex;justify-content:space-between;align-items:flex-start}
-.brand{font-size:96px;line-height:.86;letter-spacing:-3px}
+.brand{width:600px;display:block;margin:-6px 0 0 -10px;filter:drop-shadow(-2px 0 rgba(0,210,255,.25)) drop-shadow(2px 0 rgba(255,0,40,.5)) drop-shadow(0 0 12px rgba(255,35,20,.6))}
 .meta{text-align:right;font-size:23px;line-height:1.45;letter-spacing:.1em;padding-top:8px}
 .meta b{font-size:34px;letter-spacing:.06em;display:block}
 .title{margin-top:14px;font-size:88px;line-height:1;font-weight:900;letter-spacing:6px}
-.tag{margin-top:16px;font-size:28px;font-weight:700;letter-spacing:.24em}
+.tag{margin-top:26px;font-size:28px;font-weight:700;letter-spacing:.24em}
 .tag i{font-style:normal;font-family:'Space Mono';margin:0 .35em;letter-spacing:0}
 /* middle headline over image */
 .spacer{flex:1}
 .hook{text-align:center}
 .hook .big{font-size:70px;font-weight:900;letter-spacing:8px;line-height:1.05}
-.hook .sub{margin-top:24px;font-size:29px;font-weight:700;letter-spacing:.16em}
+.hook .sub{margin-top:74px;font-size:29px;font-weight:700;letter-spacing:.16em}
 /* split info like image 2 */
 .split{margin-top:34px;display:grid;grid-template-columns:1fr 2px 1fr;align-items:center;text-align:center}
 .split .bar{height:150px;background:var(--red);box-shadow:0 0 12px rgba(255,40,20,.8);opacity:.85}
@@ -74,14 +74,13 @@ html,body{width:var(--W);height:var(--H);background:#000;overflow:hidden}
   <div class="grad"></div>
   <div class="ui">
     <div class="top">
-      <div class="brand heavy red lines">Magic<br>Room</div>
+      <img class="brand lines" src="logo.png" alt="Magic Room">
       <div class="meta mono red dots">Hong Kong · 香港<br><b>2026.11.21</b>15:30–22:00</div>
     </div>
-    <div class="title cn red lines">浩室音乐派对</div>
     <div class="tag cn red dots">维港海景<i>×</i>摩天轮<i>×</i>城市天际线</div>
     <div class="spacer"></div>
     <div class="hook">
-      <div class="big cn red lines">港风电音派对来了</div>
+      <div class="big cn red lines">港风 <span class="heavy" style="letter-spacing:2px">HOUSE</span> 派对来了</div>
       <div class="sub cn red dots">吹着维港季候风，享受 <span class="mono" style="letter-spacing:.08em">HOUSE</span> 音乐</div>
     </div>
     <div class="split">
