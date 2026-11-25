@@ -89,7 +89,7 @@ with open(os.path.join(OUT, NAME + "_音乐打点.txt"), "w", encoding="utf-8") 
     f.write("2. 解说全程不停，建议音乐压在人声下方约 -18 ~ -22 dB（剪映里大概 15%~25% 音量），\n   人声空档处可以稍微推高。\n")
     f.write("3. 2002 罪恶都市 段的 “八十年代” 落点有一个80年代合成器和弦重音，可以对齐音乐鼓点。\n")
     f.write("4. 2026 GTA VI 段：前 7 秒是“等待/泄露/预告”，画面偏暗；"
-            f"{ts(TL['beats']['g6_date'] - 0.55)} 白闪揭晓发售，最适合让音乐的高潮/副歌在这里进。\n")
+            f"{ts(next(l for l in TL['lines'] if l['id'] == 'g6d')['start'] - 0.2)} 白闪揭晓发售，最适合让音乐的高潮/副歌在这里进。\n")
     f.write("5. 开场 00:00 ~ " + ts(TL['segments'][1]['start']) + " 和结尾目前没有安排音乐，可留空或放主题曲。\n")
     f.write("\n关键节拍（可用于对齐音乐重拍）：\n")
     nice = {"h2_money": "开场 37.9亿", "g1_mad": "GTA1 警察发疯", "g1_born": "GTA诞生", "g2_rockstar": "Rockstar 登场",
