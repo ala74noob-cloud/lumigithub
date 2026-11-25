@@ -24,12 +24,12 @@ def srt_ts(t):
 
 # ---------------- loudness: two-pass loudnorm on the mix (target -15 LUFS, -1.5 dBTP)
 mix = os.path.join(AUD, "mix.wav")
-pre = "alimiter=limit=0.6:attack=3:release=80:level=disabled"
+pre = "alimiter=limit=0.45:attack=1:release=60:level=disabled"
 r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", mix, "-af",
-                    pre + ",loudnorm=I=-15:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+                    pre + ",loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
                    capture_output=True, text=True)
 meas = json.loads(r.stderr[r.stderr.rindex("{"):r.stderr.rindex("}") + 1])
-ln = ("loudnorm=I=-15:TP=-1.5:LRA=11:linear=true:"
+ln = ("loudnorm=I=-16:TP=-1.5:LRA=11:linear=true:"
       f"measured_I={meas['input_i']}:measured_TP={meas['input_tp']}:measured_LRA={meas['input_lra']}:"
       f"measured_thresh={meas['input_thresh']}:offset={meas['target_offset']}")
 mix_norm = os.path.join(AUD, "mix_norm.wav")
@@ -46,16 +46,17 @@ with open(meta, "w", encoding="utf-8") as f:
         f.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={int(s['start']*1000)}\nEND={int(s['end']*1000)}\ntitle={labels[s['id']]}\n")
 
 final = os.path.join(OUT, NAME + ".mp4")
-subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", VIDEO, "-i", mix_norm, "-i", meta,
-                "-map", "0:v", "-map", "1:a", "-map_metadata", "2", "-map_chapters", "2",
-                "-c:v", "copy", "-c:a", "aac", "-b:a", "320k", "-shortest", "-movflags", "+faststart", final], check=True)
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", VIDEO, "-i", mix_norm,
+                "-map", "0:v", "-map", "1:a", "-metadata", "title=90秒看完GTA 1-6代发展史",
+                "-c:v", "libx264", "-preset", "slow", "-crf", "21", "-maxrate", "9M", "-bufsize", "18M",
+                "-pix_fmt", "yuv420p", "-profile:v", "high", "-c:a", "aac", "-b:a", "256k",
+                "-shortest", "-movflags", "+faststart", final], check=True)
 
 # stems (same timeline, original relative levels: voice + sfx = mix before loudness normalisation)
 for s in ("voice", "sfx"):
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", os.path.join(AUD, s + ".wav"), "-c:a", "flac",
                     os.path.join(OUT, "stems", f"{s}.flac")], check=True)
-subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", VIDEO, "-c:v", "copy", "-an",
-                os.path.join(OUT, "stems", "画面_无声.mp4")], check=True)
+
 
 # ---------------- SRT (full narration, numbers as digits)
 SUB = [("一九九七年", "1997年"), ("一九九九年", "1999年"), ("二零零一年", "2001年"), ("二零零四年", "2004年"),
