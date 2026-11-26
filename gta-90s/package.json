@@ -1,0 +1,12 @@
+{
+  "name": "gta-90s",
+  "private": true,
+  "description": "90秒看完GTA 1-6代：2D 动画短片渲染器",
+  "scripts": {
+    "render": "node src/render.js 4 30",
+    "still": "node src/still.js build/stills"
+  },
+  "dependencies": {
+    "playwright": "1.49.1"
+  }
+}

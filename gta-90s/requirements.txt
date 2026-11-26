@@ -1,0 +1,10 @@
+# Python 3.9+
+edge-tts>=7.0
+numpy
+scipy
+soundfile
+pycryptodome
+mutagen
+imageio-ffmpeg
+fonttools
+brotli

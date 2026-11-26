@@ -114,6 +114,8 @@ def build():
     os.makedirs(os.path.join(ROOT, "build"), exist_ok=True)
     json.dump(tl, open(os.path.join(ROOT, "build", "timeline.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
+    os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)   # tracked copy for fresh clones / music step
+    json.dump(tl, open(os.path.join(ROOT, "data", "timeline.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     with open(os.path.join(ROOT, "src", "timeline.js"), "w", encoding="utf-8") as fh:
         fh.write("window.TL = " + json.dumps(tl, ensure_ascii=False) + ";\n")
     return tl

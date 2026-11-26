@@ -6,7 +6,8 @@ const path = require('path');
 const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..');
-const TL = JSON.parse(fs.readFileSync(path.join(ROOT, 'build', 'timeline.json'), 'utf8'));
+const TLP = [path.join(ROOT, 'build', 'timeline.json'), path.join(ROOT, 'data', 'timeline.json')].find(p => fs.existsSync(p));
+const TL = JSON.parse(fs.readFileSync(TLP, 'utf8'));
 const WORKERS = parseInt(process.argv[2] || '4', 10);
 const FPS = parseInt(process.argv[3] || '30', 10);
 const NF = Math.round(TL.total * FPS);
