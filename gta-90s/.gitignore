@@ -1,3 +1,7 @@
 build/
 node_modules/
 __pycache__/
+.venv/
+配乐方案.json
+out/*_配乐版.mp4
+out/stems/music.flac

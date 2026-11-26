@@ -5,13 +5,33 @@ usage: python3 src/music.py build/music/plan.json
 plan.json: {"gta1": {"file": "...", "offset": null|seconds, "gain_db": 0}, ...}
   offset null -> auto: skip a quiet intro and start on a strong onset.
 """
-import json, os, subprocess, sys
+import json, os, shutil, subprocess, sys
 import numpy as np
 import soundfile as sf
 from scipy import signal
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TL = json.load(open(os.path.join(ROOT, "build", "timeline.json"), encoding="utf-8"))
+
+
+def _first(*paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    raise FileNotFoundError(paths[-1])
+
+
+def ffmpeg_exe():
+    """System ffmpeg if installed, otherwise the static build shipped with the imageio-ffmpeg wheel."""
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+FF = ffmpeg_exe()
+TL = json.load(open(_first(os.path.join(ROOT, "build", "timeline.json"), os.path.join(ROOT, "data", "timeline.json")),
+                    encoding="utf-8"))
 SR = 48000
 SEG = {s["id"]: s for s in TL["segments"]}
 OUT = os.path.join(ROOT, "out")
@@ -23,7 +43,7 @@ FADE_IN, FADE_OUT, TAIL = 0.10, 0.45, 0.35
 
 
 def load(path):
-    r = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "2", "-ar", str(SR), "-"],
+    r = subprocess.run([FF, "-v", "error", "-i", path, "-f", "f32le", "-ac", "2", "-ar", str(SR), "-"],
                        capture_output=True, check=True)
     return np.frombuffer(r.stdout, dtype=np.float32).reshape(-1, 2).astype(np.float64)
 
@@ -78,10 +98,12 @@ def voice_env(voice):
 
 
 def main(plan_path):
-    plan = json.load(open(plan_path, encoding="utf-8"))
-    voice, _ = sf.read(os.path.join(ROOT, "build", "audio", "voice.wav"))
-    sfx, _ = sf.read(os.path.join(ROOT, "build", "audio", "sfx.wav"))
-    N = len(voice)
+    plan = json.load(open(plan_path, encoding="utf-8")) if isinstance(plan_path, str) else plan_path
+    plan = {k: v for k, v in plan.items() if k in SEG and v and v.get("file")}
+    voice, _ = sf.read(_first(os.path.join(ROOT, "build", "audio", "voice.wav"), os.path.join(OUT, "stems", "voice.flac")))
+    sfx, _ = sf.read(_first(os.path.join(ROOT, "build", "audio", "sfx.wav"), os.path.join(OUT, "stems", "sfx.flac")))
+    N = min(len(voice), len(sfx))
+    voice, sfx = voice[:N], sfx[:N]
     music = np.zeros((N, 2))
     report = []
     for sid, cfg in plan.items():
@@ -112,31 +134,32 @@ def main(plan_path):
     sf.write(raw, mix, SR, subtype="FLOAT")
     os.makedirs(os.path.join(OUT, "stems"), exist_ok=True)
     sf.write(os.path.join(ROOT, "build", "music", "music.wav"), music, SR, subtype="PCM_24")
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", os.path.join(ROOT, "build", "music", "music.wav"),
+    subprocess.run([FF, "-y", "-v", "error", "-i", os.path.join(ROOT, "build", "music", "music.wav"),
                     "-c:a", "flac", os.path.join(OUT, "stems", "music.flac")], check=True)
 
     # loudness: pre-limit peaks, then linear loudnorm to -16 LUFS / -1.5 dBTP
     pre = "alimiter=limit=0.45:attack=1:release=60:level=disabled"
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", raw, "-af",
+    r = subprocess.run([FF, "-hide_banner", "-nostats", "-i", raw, "-af",
                         pre + ",loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
     m = json.loads(r.stderr[r.stderr.rindex("{"):r.stderr.rindex("}") + 1])
     ln = (f"loudnorm=I=-16:TP=-1.5:LRA=11:linear=true:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
           f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}")
     norm = os.path.join(ROOT, "build", "music", "mix_music_norm.wav")
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", pre + "," + ln, "-ar", str(SR),
+    subprocess.run([FF, "-y", "-v", "error", "-i", raw, "-af", pre + "," + ln, "-ar", str(SR),
                     "-c:a", "pcm_s24le", norm], check=True)
     src_video = os.path.join(OUT, NAME + ".mp4")
     final = os.path.join(OUT, NAME + "_配乐版.mp4")
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", src_video, "-i", norm, "-map", "0:v", "-map", "1:a",
+    subprocess.run([FF, "-y", "-v", "error", "-i", src_video, "-i", norm, "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart",
                     "-metadata", "title=90秒看完GTA 1-6代发展史（配乐版）", final], check=True)
     json.dump(report, open(os.path.join(ROOT, "build", "music", "report.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
-    for row in report:
-        print(row)
-    print("->", final)
+    return final, report
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    f, rep = main(sys.argv[1])
+    for row in rep:
+        print(row)
+    print("->", f)

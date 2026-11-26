@@ -5,6 +5,7 @@ usage: python3 -I src/ncm2audio.py OUT_DIR file1.ncm [file2.ncm ...]
 Prints one JSON line per file: {"src", "out", "title", "artist", "album", "format"}
 """
 import base64, json, os, struct, sys
+import numpy as np
 from Crypto.Cipher import AES
 
 CORE_KEY = bytes.fromhex("687A4852416D736F356B496E62617857")
@@ -76,8 +77,9 @@ def decode(path, out_dir):
         raise ValueError("could not locate audio stream in " + path)
     enc = data[start:]
     # XOR with repeating 256-byte keystream (index i uses table[(i+1) & 0xff])
-    ks = (table[1:] + table[:1]) * (len(enc) // 256 + 1)
-    audio = bytes(x ^ y for x, y in zip(enc, ks))
+    ks = np.frombuffer(table[1:] + table[:1], dtype=np.uint8)
+    arr = np.frombuffer(enc, dtype=np.uint8)
+    audio = (arr ^ np.resize(ks, len(arr))).tobytes()
     fmt = meta.get("format") or _sniff(audio[:16]) or "mp3"
     title = meta.get("musicName") or os.path.splitext(os.path.basename(path))[0]
     artist = ", ".join(a[0] for a in meta.get("artist", []) if a) if meta.get("artist") else ""
